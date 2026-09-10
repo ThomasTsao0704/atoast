@@ -266,7 +266,7 @@
     </div>
     <div class="rules-entry" id="rulesEntry"><span class="ic">i</span><span>預訂規則</span></div>
     <div class="rules-panel" id="rulesPanel">
-      <div class="inner" id="rulesText">（此處放預訂規則文字，例如：最低外送金額、外送費、預訂時間限制等）</div>
+      <div class="inner" id="rulesText">（滿兩千才可外送）</div>
     </div>
   </div>
 
@@ -312,65 +312,11 @@
 function hasBackend(){ return !!(window.google && window.google.script && window.google.script.run); }
 
 /* ---------------- DATA (內建後備菜單，API 抓不到時仍可瀏覽) ---------------- */
-const DEFAULT_MENU = [
-  { key:"sandwich", zh:"吐司類", en:"Sandwich", combo:true, items:[
-    {id:"s1", zh:"鱷勢力排骨", en:"Taiwanese Fried Pork Sandwich", p:110},
-    {id:"s2", zh:"匠燒牛五花", en:"Beef Sandwich", p:98},
-    {id:"s3", zh:"塔塔鱈魚排", en:"Tartar Fish Sandwich", p:98},
-    {id:"s4", zh:"G鱷遊戲", en:"Chicken Cheese Sandwich", p:88},
-    {id:"s5", zh:"花醬的秘密", en:"Peanut Butter Pork Sandwich", p:88},
-    {id:"s6", zh:"鬼椒辣肉蛋", en:"Spicy Pork & Egg Sandwich", p:78},
-    {id:"s7", zh:"肉蛋双飛", en:"Pork & Egg Sandwich", p:78},
-    {id:"s8", zh:"薯泥蛋起司", en:"Potato Salad Sandwich", p:70},
-    {id:"s9", zh:"蔬菜蛋起司", en:"Veggie Egg Sandwich", p:70},
-  ]},
-  { key:"burger", zh:"漢堡類", en:"Burger", combo:true, items:[
-    {id:"b1", zh:"松露野菇牛肉堡", en:"Truffle & Mushroom Burger", p:150},
-    {id:"b2", zh:"櫛瓜莎莎牛肉堡", en:"Zucchini Salsa Burger", p:140},
-    {id:"b3", zh:"墨西哥莎莎牛肉堡", en:"Mexican Salsa Chili Burger", p:140},
-    {id:"b4", zh:"BBQ培根牛肉堡", en:"BBQ Bacon Burger", p:140},
-    {id:"b5", zh:"熔岩花生牛肉堡", en:"Peanut Butter Cheese Burger", p:140},
-    {id:"b6", zh:"酸黃瓜起司牛肉堡", en:"Cheese Burger", p:130},
-    {id:"b7", zh:"櫛瓜雞肉堡", en:"Zucchini Chicken Burger", p:125},
-    {id:"b8", zh:"松露野菇歐姆蛋堡", en:"Truffle & Mushroom Omelette Burger", p:120},
-  ]},
-  { key:"omelette", zh:"蛋餅類", en:"Chinese Omelette", combo:true, items:[
-    {id:"o1", zh:"高麗菜蛋餅", en:"Chinese Cabbage Omelette", p:60},
-    {id:"o2", zh:"高麗菜起司蛋餅", en:"Cabbage Omelette with Cheese", p:70},
-    {id:"o3", zh:"鮪魚玉米蛋餅", en:"Omelette with Tuna & Corn", p:75},
-    {id:"o4", zh:"培根起司蛋餅", en:"Omelette with Bacon & Cheese", p:70},
-    {id:"o5", zh:"玉米起司蛋餅", en:"Cheese Corn Egg Pancake", p:70},
-    {id:"o6", zh:"滿滿小魚辣椒蛋餅", en:"Small Fish Chili Egg Pancake", p:75},
-  ]},
-  { key:"tea", zh:"來找茶", en:"Tea", drink:true, items:[
-    {id:"t1", zh:"台灣紅茶", en:"Taiwan Black Tea", p:40, hot:true, cold:true, sugar:"糖"},
-    {id:"t2", zh:"高山四季春茶", en:"Sijiqing Tea", p:40, hot:true, cold:true, sugar:"糖"},
-    {id:"t3", zh:"港式凍檸茶", en:"Lemon Tea", p:65, hot:false, cold:true, sugar:null},
-    {id:"t4", zh:"原味茶歐蕾", en:"Milk Tea", p:45, hot:true, cold:true, sugar:"糖"},
-    {id:"t5", zh:"小農鮮奶茶", en:"Fresh Milk Tea", p:55, hot:true, cold:true, sugar:"糖"},
-  ]},
-  { key:"juice", zh:"鮮果汁", en:"Juice", drink:true, items:[
-    {id:"j1", zh:"冰萃柳丁汁", en:"Orange Juice", p:75, hot:false, cold:true, sugar:"無"},
-  ]},
-  { key:"coffee", zh:"找好咖", en:"Coffee", drink:true, items:[
-    {id:"c1", zh:"莊園美式咖啡", en:"Americano", p:65, hot:true, cold:true, sugar:"無"},
-    {id:"c2", zh:"小農莊園拿鐵", en:"Latte", p:75, hot:true, cold:true, sugar:"糖"},
-    {id:"c3", zh:"西西里咖啡", en:"Lemon Coffee", p:75, hot:false, cold:true, sugar:"無"},
-  ]},
-  { key:"side", zh:"輕鬆配", en:"Side Dish", side:true, items:[
-    {id:"d1", zh:"德州脆薯", en:"French Fries", p:49},
-    {id:"d2", zh:"芋泥球", en:"Taro Balls", p:49},
-    {id:"d3", zh:"洋蔥圈", en:"Onion Rings", p:49},
-    {id:"d4", zh:"麥克雞塊", en:"Chicken Nugget", p:49},
-    {id:"d5", zh:"手工地瓜條", en:"Fried Sweet Potato", p:49},
-    {id:"d6", zh:"酥炸虱目魚柳（塔塔醬）", en:"Fried Milkfish & Fries", p:70},
-    {id:"d7", zh:"青花椒無骨鹽酥雞·微辣", en:"Peppercorns Fried Chicken", p:70},
-  ]},
-];
+const DEFAULT_MENU = [];
 
 // 套餐計價參數（載入後會被後端 Config 覆蓋，這裡是離線後備值）
 let CONFIG = {
-  COMBO_FEE: 75,
+  COMBO_FEE: 80,
   COMBO_FREE_TEAS: ["t1","t2"],   // 台灣紅茶 / 高山四季春茶
   COMBO_OTHER_DRINK_DISC: 40,     // 其他飲料折 40
   COMBO_SIDE_DISC: 49,            // 輕鬆配任一折 49
