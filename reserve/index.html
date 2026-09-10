@@ -15,8 +15,7 @@
     --bg:#e9e7e2;
     --hair:#e2e2e2;
     --muted:#8a8a8a;
-    --accent:#111;
-    --ok:#111;
+    --disc:#0a7d33;          /* 折扣用的綠 */
     --maxw:520px;
     --safe: env(safe-area-inset-bottom, 0px);
   }
@@ -54,19 +53,22 @@
     width:0;height:0;border-left:.32em solid transparent;border-right:.32em solid transparent;
     border-bottom:.56em solid var(--ink);transform:translateY(.02em);
   }
-  .cupmini{width:40px;height:24px;}
 
-  .ordertype{
-    display:flex;gap:8px;margin-top:12px;
-  }
+  .ordertype{display:flex;gap:8px;margin-top:12px;}
   .seg{
     flex:1;text-align:center;padding:9px 0;border:1.5px solid var(--ink);
-    font-family:"Noto Sans TC";font-weight:500;font-size:14px;cursor:pointer;
-    background:var(--paper);color:var(--ink);transition:.15s;
+    font-family:"Noto Sans TC";font-weight:500;font-size:14px;
+    background:var(--ink);color:#fff;
   }
-  .seg small{font-family:"Barlow";font-weight:500;opacity:.6;margin-left:4px;font-size:11px;}
-  .seg.active{background:var(--ink);color:#fff;}
-  .seg.active small{opacity:.8;}
+  .seg small{font-family:"Barlow";font-weight:500;opacity:.8;margin-left:4px;font-size:11px;}
+
+  /* combo 提示條 */
+  .combohint{
+    display:flex;align-items:center;gap:8px;margin-top:10px;
+    background:#f4f7f4;border:1.4px solid #d6e4d9;border-radius:10px;
+    padding:8px 11px;font-family:"Noto Sans TC";font-size:12.5px;color:#2f6b41;line-height:1.5;
+  }
+  .combohint b{font-weight:700;}
 
   .rules-entry{
     display:flex;align-items:center;gap:4px;margin-top:8px;
@@ -80,7 +82,7 @@
     max-height:0;overflow:hidden;transition:max-height .3s ease, margin-top .3s ease;
     background:#f7f6f3;border:1.4px solid var(--hair);border-radius:10px;margin-top:0;
   }
-  .rules-panel.open{max-height:200px;margin-top:8px;}
+  .rules-panel.open{max-height:220px;margin-top:8px;}
   .rules-panel .inner{
     padding:10px 12px;font-family:"Noto Sans TC";font-size:12.5px;line-height:1.7;color:#555;white-space:pre-line;
   }
@@ -106,97 +108,82 @@
   .sec-head{display:flex;align-items:baseline;gap:10px;border-bottom:2px solid var(--ink);padding-bottom:7px;margin-bottom:6px;}
   .sec-head .zh{font-family:"Noto Sans TC";font-weight:700;font-size:18px;letter-spacing:.05em;}
   .sec-head .en{font-family:"Barlow Semi Condensed";font-weight:600;font-size:16px;text-transform:uppercase;letter-spacing:.04em;color:#333;}
+  .sec-head .badge{
+    margin-left:auto;font-family:"Noto Sans TC";font-size:11px;font-weight:700;color:var(--disc);
+    border:1.2px solid #cfe3d4;background:#f4f7f4;border-radius:6px;padding:2px 7px;
+  }
 
   .item{
-    display:flex;align-items:flex-start;gap:12px;padding:13px 2px;border-bottom:1px solid var(--hair);cursor:pointer;
+    display:flex;align-items:flex-start;gap:12px;padding:13px 2px;border-bottom:1px solid var(--hair);
   }
   .item:last-child{border-bottom:none;}
   .item .info{flex:1;min-width:0;}
   .item .zh{font-family:"Noto Sans TC";font-weight:500;font-size:15px;}
   .item .en{font-family:"Barlow";font-weight:400;font-size:12px;color:#7a7a7a;margin-top:1px;}
-  .item .tagline{display:flex;gap:5px;margin-top:5px;}
+  .item .tagline{display:flex;gap:5px;margin-top:5px;flex-wrap:wrap;}
   .mini{
-    font-family:"Barlow";font-weight:600;font-size:9px;width:15px;height:15px;border:1.2px solid var(--ink);
-    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:"Barlow";font-weight:600;font-size:9px;height:15px;min-width:15px;padding:0 4px;border:1.2px solid var(--ink);
+    border-radius:8px;display:flex;align-items:center;justify-content:center;
   }
-  .mini.zh{font-family:"Noto Sans TC";font-size:8px;}
+  .mini.zh{font-family:"Noto Sans TC";font-size:9px;}
   .mini.solid{background:var(--ink);color:#fff;}
-  .item .right{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:10px;}
-  .item .price{font-family:"Barlow";font-weight:600;font-size:16px;}
-  .add{
-    width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);background:#fff;color:var(--ink);
-    font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;
+
+  .item .right{display:flex;flex-direction:row;align-items:center;gap:12px;flex:none;}
+  .item .steps{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+  .item .price{font-family:"Barlow";font-weight:600;font-size:16px;min-width:32px;text-align:right;}
+
+  /* 熱／冰 各一組獨立加減 */
+  .steprow{display:flex;align-items:center;gap:8px;}
+  .temp-lbl{font-family:"Noto Sans TC";font-size:12px;font-weight:600;color:#555;min-width:16px;text-align:right;}
+
+  /* inline 加減 */
+  .add-btn{
+    width:32px;height:32px;border-radius:50%;border:1.5px solid var(--ink);background:#fff;color:var(--ink);
+    font-size:21px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;
     font-family:"Barlow";font-weight:400;transition:.12s;
   }
-  .add:active{background:var(--ink);color:#fff;transform:scale(.9);}
-  .combo-badge{
-    display:inline-block;margin-left:6px;font-family:"Noto Sans TC";font-size:10px;font-weight:700;
-    border:1px solid var(--ink);border-radius:4px;padding:1px 5px;vertical-align:middle;
+  .add-btn:active{background:var(--ink);color:#fff;transform:scale(.9);}
+  .stepper-inline{display:flex;align-items:center;border:1.5px solid var(--ink);border-radius:20px;overflow:hidden;}
+  .stepper-inline button{
+    border:none;background:#fff;color:var(--ink);width:32px;height:32px;
+    font-size:20px;line-height:1;cursor:pointer;font-family:"Barlow";
   }
-
-  .qtychip{
-    display:flex;align-items:center;gap:10px;border:1.5px solid var(--ink);border-radius:20px;padding:2px 4px;
-  }
-  .qtychip button{border:none;background:none;font-size:18px;width:24px;height:24px;cursor:pointer;font-family:"Barlow";line-height:1;}
-  .qtychip .n{font-family:"Barlow";font-weight:600;font-size:14px;min-width:14px;text-align:center;}
+  .stepper-inline button:active{background:#f1f1f1;}
+  .stepper-inline .n{min-width:26px;text-align:center;font-family:"Barlow";font-weight:700;font-size:15px;}
 
   /* ---------- Cart bar ---------- */
   .cartbar{
     position:fixed;left:0;right:0;bottom:0;z-index:50;
     max-width:var(--maxw);margin:0 auto;
     background:var(--ink);color:#fff;cursor:pointer;
-    padding:14px 18px calc(14px + var(--safe));
+    padding:12px 18px calc(12px + var(--safe));
     display:flex;align-items:center;justify-content:space-between;
     transform:translateY(120%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
   }
   .cartbar.show{transform:translateY(0);}
   .cartbar .left{display:flex;align-items:center;gap:12px;}
   .cartbar .count{
-    background:#fff;color:var(--ink);border-radius:50%;width:26px;height:26px;
+    background:#fff;color:var(--ink);border-radius:50%;width:26px;height:26px;flex:none;
     display:flex;align-items:center;justify-content:center;font-family:"Barlow";font-weight:700;font-size:13px;
   }
+  .cartbar .lblwrap{display:flex;flex-direction:column;line-height:1.25;}
   .cartbar .lbl{font-family:"Noto Sans TC";font-weight:500;font-size:15px;}
+  .cartbar .sublbl{font-family:"Noto Sans TC";font-size:11px;color:#9be2ad;}
   .cartbar .total{font-family:"Barlow";font-weight:700;font-size:19px;}
 
-  /* ---------- Overlay + Sheets ---------- */
-  .overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;opacity:0;pointer-events:none;transition:.2s;
-  }
+  /* ---------- Overlay + Sheet ---------- */
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;opacity:0;pointer-events:none;transition:.2s;}
   .overlay.show{opacity:1;pointer-events:auto;}
   .sheet{
     position:fixed;left:0;right:0;bottom:0;z-index:70;max-width:var(--maxw);margin:0 auto;
     background:#fff;border-radius:20px 20px 0 0;transform:translateY(110%);transition:transform .3s cubic-bezier(.2,.8,.2,1);
-    max-height:90vh;display:flex;flex-direction:column;
+    max-height:92vh;display:flex;flex-direction:column;
   }
   .sheet.show{transform:translateY(0);}
   .sheet .grab{width:44px;height:5px;background:#d5d5d5;border-radius:3px;margin:10px auto 4px;}
   .sheet .body{overflow-y:auto;padding:6px 20px 20px;}
   .sheet .foot{padding:14px 20px calc(18px + var(--safe));border-top:1px solid var(--hair);}
   .sheet-title{font-family:"Noto Sans TC";font-weight:700;font-size:19px;margin:6px 0 2px;}
-  .sheet-sub{font-family:"Barlow";font-size:12px;color:#888;margin-bottom:14px;}
-
-  .optgroup{margin:16px 0 4px;}
-  .optgroup h4{font-family:"Noto Sans TC";font-size:14px;font-weight:700;margin:0 0 8px;display:flex;align-items:center;gap:8px;}
-  .optgroup h4 .req{font-family:"Barlow";font-size:10px;font-weight:600;color:#fff;background:var(--ink);border-radius:3px;padding:1px 5px;}
-  .opt{
-    display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border:1.4px solid var(--hair);
-    border-radius:12px;margin-bottom:8px;cursor:pointer;font-family:"Noto Sans TC";font-size:14px;transition:.12s;
-  }
-  .opt.sel{border-color:var(--ink);background:#faf9f7;}
-  .opt .radio{width:18px;height:18px;border-radius:50%;border:1.6px solid #bbb;flex:none;position:relative;}
-  .opt.sel .radio{border-color:var(--ink);}
-  .opt.sel .radio::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--ink);}
-  .opt .l{display:flex;align-items:center;gap:11px;}
-  .opt .adj{font-family:"Barlow";font-weight:600;font-size:13px;color:#555;}
-  .opt .en{font-family:"Barlow";font-size:11px;color:#999;display:block;font-weight:400;}
-
-  .toggle-combo{display:flex;gap:8px;margin:4px 0 6px;}
-  .tc{
-    flex:1;border:1.5px solid var(--ink);border-radius:12px;padding:12px;cursor:pointer;text-align:left;background:#fff;transition:.12s;
-  }
-  .tc.sel{background:var(--ink);color:#fff;}
-  .tc .t{font-family:"Noto Sans TC";font-weight:700;font-size:14px;}
-  .tc .d{font-family:"Barlow";font-size:11px;opacity:.7;margin-top:2px;}
 
   .btn{
     width:100%;border:none;background:var(--ink);color:#fff;padding:15px;border-radius:12px;
@@ -206,50 +193,44 @@
   .btn .amt{font-family:"Barlow";}
   .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--ink);}
 
-  .sheet .stepper{display:flex;align-items:center;justify-content:center;gap:20px;margin:18px 0 4px;}
-  .sheet .stepper button{width:38px;height:38px;border-radius:50%;border:1.6px solid var(--ink);background:#fff;font-size:22px;cursor:pointer;font-family:"Barlow";}
-  .sheet .stepper .n{font-family:"Barlow";font-weight:700;font-size:22px;min-width:30px;text-align:center;}
-
-  /* cart sheet lines */
+  /* cart lines */
   .cline{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--hair);}
   .cline .ci{flex:1;}
   .cline .cn{font-family:"Noto Sans TC";font-weight:600;font-size:15px;}
   .cline .cs{font-family:"Noto Sans TC";font-size:12px;color:#888;margin-top:3px;line-height:1.5;}
   .cline .cp{font-family:"Barlow";font-weight:600;font-size:15px;white-space:nowrap;align-self:flex-start;}
-  .cline .qtychip{margin-top:8px;width:fit-content;}
+  .cline .qtychip{margin-top:8px;width:fit-content;display:flex;align-items:center;gap:8px;border:1.5px solid var(--ink);border-radius:20px;padding:2px 4px;}
+  .cline .qtychip button{border:none;background:none;font-size:18px;width:24px;height:24px;cursor:pointer;font-family:"Barlow";line-height:1;}
+  .cline .qtychip .n{font-family:"Barlow";font-weight:600;font-size:14px;min-width:14px;text-align:center;}
+  .cline .tag{display:inline-block;margin-top:6px;font-family:"Noto Sans TC";font-size:10.5px;font-weight:700;color:var(--disc);border:1px solid #cfe3d4;border-radius:5px;padding:1px 6px;}
+
   .note{width:100%;border:1.4px solid var(--hair);border-radius:12px;padding:12px;font-family:"Noto Sans TC";font-size:14px;resize:none;margin-top:6px;}
   .note:focus{outline:none;border-color:var(--ink);}
   .sumrow{display:flex;justify-content:space-between;font-family:"Noto Sans TC";font-size:14px;padding:5px 0;color:#555;}
+  .sumrow.disc{color:var(--disc);font-weight:600;}
+  .sumrow .n{font-family:"Barlow";}
   .sumrow.grand{font-weight:700;font-size:19px;color:var(--ink);border-top:2px solid var(--ink);margin-top:6px;padding-top:10px;}
-  .sumrow.grand .n{font-family:"Barlow";}
 
   .empty{text-align:center;padding:40px 0;color:#aaa;font-family:"Noto Sans TC";}
 
-  /* confirmation */
   .done{text-align:center;padding:30px 10px;}
   .done .check{width:70px;height:70px;border-radius:50%;background:var(--ink);color:#fff;font-size:36px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
   .done h2{font-family:"Noto Sans TC";font-size:22px;margin:0 0 6px;}
   .done .onum{font-family:"Barlow";font-weight:900;font-size:44px;letter-spacing:.02em;margin:10px 0;}
   .done p{font-family:"Noto Sans TC";color:#666;font-size:14px;margin:4px 0;}
+
   .toast{
     position:fixed;left:50%;bottom:110px;transform:translateX(-50%) translateY(20px);z-index:90;
     background:var(--ink);color:#fff;padding:11px 20px;border-radius:24px;font-family:"Noto Sans TC";font-size:14px;
-    opacity:0;transition:.25s;pointer-events:none;max-width:90%;
+    opacity:0;transition:.25s;pointer-events:none;max-width:90%;text-align:center;
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  /* delivery form */
   .dfield{margin-bottom:10px;}
   .dfield label{display:block;font-family:"Noto Sans TC";font-weight:700;font-size:13px;margin-bottom:5px;}
-  .dfield input{width:100%;border:1.4px solid var(--hair);border-radius:12px;padding:11px 12px;font-family:"Noto Sans TC";font-size:14px;}
-  .dfield input:focus{outline:none;border-color:var(--ink);}
-  .dfield input.bad{border-color:#d33;background:#fdf3f3;}
-  .dfield select{
-    width:100%;border:1.4px solid var(--hair);border-radius:12px;padding:11px 12px;
-    font-family:"Noto Sans TC";font-size:14px;background:#fff;color:var(--ink);
-  }
-  .dfield select:focus{outline:none;border-color:var(--ink);}
-  .dfield select.bad{border-color:#d33;background:#fdf3f3;}
+  .dfield input,.dfield select{width:100%;border:1.4px solid var(--hair);border-radius:12px;padding:11px 12px;font-family:"Noto Sans TC";font-size:14px;background:#fff;color:var(--ink);}
+  .dfield input:focus,.dfield select:focus{outline:none;border-color:var(--ink);}
+  .dfield input.bad,.dfield select.bad{border-color:#d33;background:#fdf3f3;}
   .req-star{color:#d33;}
 </style>
 </head>
@@ -262,18 +243,22 @@
       <div class="wordmark">A&nbsp;TO<span class="tri"></span>ST</div>
     </div>
     <div class="ordertype">
-      <div class="seg active" style="cursor:default">🛵 外送 <small>Delivery</small></div>
+      <div class="seg">🛵 外送 <small>Delivery</small></div>
+    </div>
+    <div class="combohint">
+      <span>🎉</span>
+      <span>自動湊套餐：每一組「飲料＋輕鬆配」自動折 <b>$9</b>，不用手動升級。</span>
     </div>
     <div class="rules-entry" id="rulesEntry"><span class="ic">i</span><span>預訂規則</span></div>
     <div class="rules-panel" id="rulesPanel">
-      <div class="inner" id="rulesText">（此處放預訂規則文字，例如：最低外送金額、外送費、預訂時間限制等）</div>
+      <div class="inner" id="rulesText">· 最低外送金額 $200
+· 外送費 $60
+· 每一組「飲料＋輕鬆配」自動折 $9
+· 供餐時間 08:30–15:30，請提前預訂</div>
     </div>
   </div>
 
-  <!-- Category tabs -->
   <div class="tabs" id="tabs"></div>
-
-  <!-- Menu -->
   <div id="menu"></div>
 
 </div>
@@ -282,19 +267,15 @@
 <div class="cartbar" id="cartbar">
   <div class="left">
     <div class="count" id="cartCount">0</div>
-    <div class="lbl">查看購物車</div>
+    <div class="lblwrap">
+      <div class="lbl">查看購物車</div>
+      <div class="sublbl" id="cartCombo"></div>
+    </div>
   </div>
   <div class="total" id="cartTotal">$0</div>
 </div>
 
 <div class="overlay" id="overlay"></div>
-
-<!-- Item / customization sheet -->
-<div class="sheet" id="itemSheet">
-  <div class="grab"></div>
-  <div class="body" id="itemBody"></div>
-  <div class="foot" id="itemFoot"></div>
-</div>
 
 <!-- Cart sheet -->
 <div class="sheet" id="cartSheet">
@@ -306,48 +287,47 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ---------------- API ---------------- */
-/* 本頁可放在任何靜態網站（GitHub Pages / Netlify / Cloudflare Pages…），
-   透過 fetch() 呼叫 Apps Script 部署出來的 /exec 網址（doGet ?api=menu 讀菜單、doPost 寫訂單）。
-   POST 用 text/plain 是為了避開瀏覽器的 CORS 預檢（Apps Script 沒有實作 doOptions）。 */
+/* ============================================================
+   A TOAST · 單頁外送點餐
+   兩個重點：
+   1) 每個品項旁有 +/- 直接改數量（不用開視窗）
+   2) 購物車自動計算「飲料＋輕鬆配」的套餐組數，每組折 $9
+   ============================================================ */
+
+/* ---- 後端（Apps Script）---- 抓不到時會自動用下方內建菜單 ---- */
 const API_URL = "https://script.google.com/macros/s/AKfycbxvLbEkvBAmtVy_JljRk_y_OSCLk3eVfJO-ve44vWzbqLYLgqGgt8k7F1mwG28CBYA/exec";
 
-/* ---------------- DATA (內建後備菜單，API 抓不到時仍可瀏覽) ---------------- */
+/* ---- 可調整參數 ---- */
+const CONFIG = {
+  COMBO_DISCOUNT: 9,   // 每一組「飲料＋輕鬆配」折抵金額
+};
+const DELIVERY_FEE = 150;   // 外送費；0 = 免運
+const MIN_ORDER    = 2000;  // 最低外送金額；0 = 不限制
+
+/* ---- 內建後備菜單（部署接上 API 後會被後端菜單覆蓋）----
+   分類規則：drink:true = 飲料、side:true = 輕鬆配、其餘 = 主餐。
+   飲料若同時 hot & cold，會出現「熱／冰」inline 切換。 */
 const DEFAULT_MENU = [];
 
-// 套餐計價參數（載入後會被後端 Config 覆蓋，這裡是離線後備值）
-let CONFIG = {
-  COMBO_FEE: 80,
-  COMBO_FREE_TEAS: ["t1","t2"],   // 台灣紅茶 / 高山四季春茶
-  COMBO_OTHER_DRINK_DISC: 40,     // 其他飲料折 40
-  COMBO_SIDE_DISC: 49,            // 輕鬆配任一折 49
-};
+let MENU = DEFAULT_MENU;
 
-let MENU = DEFAULT_MENU;          // 先用內建菜單，載入後由 API 覆蓋
-let drinkItems = [];
-let sideItems  = [];
-function deriveMenu(){
-  const cat = k => (MENU.find(m=>m.key===k)||{items:[]}).items;
-  drinkItems = [...cat("tea"), ...cat("juice"), ...cat("coffee")];
-  sideItems  = cat("side");
+/* 判斷一個分類是飲料 / 輕鬆配 / 主餐（相容後端菜單的 key==='side'） */
+function groupType(g){
+  if(g.drink) return "drink";
+  if(g.side || g.key==="side") return "side";
+  return "main";
 }
-deriveMenu();
 
 /* ---------------- STATE ---------------- */
-let state = { orderType:"delivery", cart:[] };  // cart: {key,name,sub,price,qty}
-
-/* ---- 外送設定（依需求自行調整）---- */
-const DELIVERY_FEE = 150;   // 外送費，改成你的金額；0 = 免運
-const MIN_ORDER    = 2000;   // 最低外送金額，未達不能送出；0 = 不限制
-
-/* 外送顧客資訊 */
+/* cart line：{ key, id, type, name, sub, price, qty } key = id(+|hot/cold) */
+let state = { cart:[] };
+let orderNote = "";
 let delivery = { name:"", phone:"", address:"", date:"", time:"" };
-function grandTotal(){ return cartTotal() + DELIVERY_FEE; }
 
 /* ---------------- HELPERS ---------------- */
 const $ = s => document.querySelector(s);
 const money = n => "$" + n;
-function findItem(id){ for(const g of MENU){const it=g.items.find(i=>i.id===id); if(it) return {it,g};} }
+function findItem(id){ for(const g of MENU){ const it=g.items.find(i=>i.id===id); if(it) return {it,g}; } return {}; }
 let toastTimer;
 function toast(msg){
   const t=$("#toast"); t.textContent=msg; t.classList.add("show");
@@ -355,13 +335,34 @@ function toast(msg){
 }
 function timeSlots(){
   const out=[];
-  for(let m=8*60+30;m<=15*60+30;m+=30){
-    out.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
-  }
+  for(let m=8*60+30;m<=15*60+30;m+=30) out.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
   return out;
 }
 
-/* ---------------- RENDER MENU ---------------- */
+function subFor(it,g,temp){
+  const parts=[];
+  if(g.drink){
+    if(temp==="hot") parts.push("熱");
+    else if(temp==="cold") parts.push("冰");
+    if(it.sugar) parts.push(it.sugar);
+  }
+  return parts.join("・");
+}
+function qtyInCart(key){ const l=state.cart.find(c=>c.key===key); return l? l.qty : 0; }
+
+/* ---------------- 套餐自動計算 ---------------- */
+function comboInfo(){
+  let drinks=0, sides=0;
+  state.cart.forEach(c=>{ if(c.type==="drink") drinks+=c.qty; else if(c.type==="side") sides+=c.qty; });
+  const count = Math.min(drinks, sides);
+  return { count, discount: count*CONFIG.COMBO_DISCOUNT, drinks, sides };
+}
+function subtotal(){ return state.cart.reduce((n,c)=>n+c.price*c.qty,0); }
+function itemsTotal(){ return subtotal() - comboInfo().discount; }         // 餐點小計 − 套餐折扣
+function grandTotal(){ return itemsTotal() + DELIVERY_FEE; }
+function cartCount(){ return state.cart.reduce((n,c)=>n+c.qty,0); }
+
+/* ---------------- RENDER：分類 tabs ---------------- */
 function renderTabs(){
   $("#tabs").innerHTML = MENU.map((g,i)=>
     `<div class="tab ${i===0?'active':''}" data-key="${g.key}">${g.zh}</div>`).join("");
@@ -370,207 +371,110 @@ function renderTabs(){
     window.scrollTo({top: sec.offsetTop-118, behavior:"smooth"});
   });
 }
+
+/* ---------------- RENDER：品項左側標籤 ---------------- */
 function drinkTags(it){
   let h="";
-  if(it.hot) h+=`<span class="mini">H</span>`;
-  if(it.cold) h+=`<span class="mini">I</span>`;
+  if(it.hot) h+=`<span class="mini">HOT</span>`;
+  if(it.cold) h+=`<span class="mini">ICE</span>`;
   if(it.sugar) h+=`<span class="mini zh ${it.sugar==='糖'?'solid':''}">${it.sugar}</span>`;
   return h?`<div class="tagline">${h}</div>`:"";
 }
+
+/* ---------------- RENDER：右側控制 ---------------- */
+/* 有冷熱的飲料 → 熱、冰各一組獨立加減，可同時各點、各算一筆
+   單溫飲料 / 主餐 / 輕鬆配 → 單一加減 */
+function stepRow(it, temp, label){
+  const key = temp ? it.id+"|"+temp : it.id;
+  const qty = qtyInCart(key);
+  const lbl = label ? `<span class="temp-lbl">${label}</span>` : "";
+  const t = temp || "";
+  const ctrl = qty>0
+    ? `<div class="stepper-inline">
+        <button data-delta="-1" data-temp="${t}" aria-label="減少">−</button>
+        <span class="n">${qty}</span>
+        <button data-delta="1" data-temp="${t}" aria-label="增加">+</button>
+      </div>`
+    : `<button class="add-btn" data-delta="1" data-temp="${t}" aria-label="加入">+</button>`;
+  return `<div class="steprow">${lbl}${ctrl}</div>`;
+}
+function controlHTML(it,g){
+  const dual = g.drink && it.hot && it.cold;
+  let steps = "";
+  if(dual){
+    steps += stepRow(it,"hot","熱");
+    steps += stepRow(it,"cold","冰");
+  }else{
+    const temp = g.drink ? (it.hot?"hot":it.cold?"cold":null) : null;
+    steps += stepRow(it, temp, null);
+  }
+  return `<div class="right" data-id="${it.id}">
+      <div class="steps">${steps}</div>
+      <div class="price">${it.p}</div>
+    </div>`;
+}
+function refreshControl(id){
+  const {it,g}=findItem(id);
+  const el=document.querySelector(`.right[data-id="${id}"]`);
+  if(el) el.outerHTML=controlHTML(it,g);
+}
+
+/* ---------------- RENDER：菜單 ---------------- */
 function renderMenu(){
   $("#menu").innerHTML = MENU.map(g=>`
     <div class="section" id="sec-${g.key}">
-      <div class="sec-head"><span class="zh">${g.zh}</span><span class="en">${g.en}</span></div>
+      <div class="sec-head">
+        <span class="zh">${g.zh}</span><span class="en">${g.en}</span>
+        ${groupType(g)==="drink"?'<span class="badge">飲料</span>':groupType(g)==="side"?'<span class="badge">輕鬆配</span>':''}
+      </div>
       ${g.items.map(it=>`
-        <div class="item" data-id="${it.id}">
+        <div class="item">
           <div class="info">
-            <div class="zh">${it.zh}${g.combo?'<span class="combo-badge">可加價升級套餐</span>':''}</div>
+            <div class="zh">${it.zh}</div>
             <div class="en">${it.en}</div>
             ${g.drink?drinkTags(it):""}
           </div>
-          <div class="right">
-            <div class="price">${it.p}</div>
-            <button class="add" aria-label="加入">+</button>
-          </div>
+          ${controlHTML(it,g)}
         </div>`).join("")}
     </div>`).join("");
-  document.querySelectorAll(".item").forEach(el=>{
-    el.onclick=()=>openItem(el.dataset.id);
-  });
 }
 
-/* ---------------- SCROLLSPY ---------------- */
-function scrollSpy(){
-  let cur=MENU[0].key;
-  for(const g of MENU){
-    const sec=document.getElementById("sec-"+g.key);
-    if(sec && sec.offsetTop-140 <= window.scrollY) cur=g.key;
+/* ---------------- 事件委派：加減 ---------------- */
+$("#menu").addEventListener("click", e=>{
+  const wrap=e.target.closest(".right"); if(!wrap) return;
+  const id=wrap.dataset.id; const {it,g}=findItem(id); if(!it) return;
+  const btn=e.target.closest("[data-delta]"); if(!btn) return;
+  const temp=btn.dataset.temp||null;
+  changeQty(it,g,temp, parseInt(btn.dataset.delta,10));
+});
+
+function changeQty(it,g,temp,delta){
+  const key = temp ? it.id+"|"+temp : it.id;   // 熱、冰各自一筆
+  let line=state.cart.find(c=>c.key===key);
+  if(!line){
+    if(delta<=0) return;
+    line={ key, id:it.id, temp:temp||null, type:groupType(g), name:it.zh, sub:subFor(it,g,temp), price:it.p, qty:0 };
+    state.cart.push(line);
   }
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.key===cur));
-}
-window.addEventListener("scroll", scrollSpy, {passive:true});
-
-/* ---------------- ORDER TYPE ---------------- */
-// 外送版訂單類型固定為 delivery，不提供切換
-
-/* ---------------- RULES PANEL ---------------- */
-let rulesAutoTimer=null;
-function toggleRules(force){
-  const panel=$("#rulesPanel");
-  const willOpen = typeof force==="boolean" ? force : !panel.classList.contains("open");
-  panel.classList.toggle("open", willOpen);
-  if(rulesAutoTimer){ clearTimeout(rulesAutoTimer); rulesAutoTimer=null; }
-}
-$("#rulesEntry").onclick=()=>toggleRules();
-// 進入頁面時自動展開，5 秒後自動收合
-toggleRules(true);
-rulesAutoTimer=setTimeout(()=>toggleRules(false), 5000);
-
-/* ---------------- ITEM SHEET ---------------- */
-let draft=null; // {item,g, qty, isCombo, hot, comboDrink, comboHot, comboSide}
-function openItem(id){
-  const {it,g}=findItem(id);
-  const d0=drinkItems.find(x=>x.id==="t1");
-  draft={ item:it, g, qty:1, isCombo:false,
-          hot: it.hot? true : (it.cold?false:null),
-          comboDrink:"t1", comboHot: d0&&d0.hot? true : (d0&&d0.cold?false:null),
-          comboSide:"d1" };
-  renderItemSheet();
-  openSheet("#itemSheet");
-}
-function unitPrice(){
-  const {item,g,isCombo,comboDrink,comboSide}=draft;
-  let base=item.p;
-  if(g.combo && isCombo){
-    base+=CONFIG.COMBO_FEE;
-    // drink adjustment
-    if(!CONFIG.COMBO_FREE_TEAS.includes(comboDrink)){
-      const d=drinkItems.find(x=>x.id===comboDrink);
-      base += Math.max(0, d.p - CONFIG.COMBO_OTHER_DRINK_DISC);
-    }
-    // side adjustment
-    const s=sideItems.find(x=>x.id===comboSide);
-    base += Math.max(0, s.p - CONFIG.COMBO_SIDE_DISC);
-  }
-  return base;
-}
-function renderItemSheet(){
-  const {item,g,qty,isCombo,hot,comboDrink,comboHot,comboSide}=draft;
-  let html=`<div class="sheet-title">${item.zh}</div><div class="sheet-sub">${item.en} · 單點 $${item.p}</div>`;
-
-  // drink temperature
-  if(g.drink){
-    const opts=[];
-    if(item.hot) opts.push(["hot","熱飲 Hot"]);
-    if(item.cold) opts.push(["cold","冰飲 Iced"]);
-    if(opts.length>1){
-      html+=`<div class="optgroup"><h4>冷熱 <span class="req">必選</span></h4>`;
-      opts.forEach(([v,l])=>{
-        const sel=(v==="hot"&&hot)||(v==="cold"&&!hot);
-        html+=`<div class="opt ${sel?'sel':''}" data-temp="${v}"><div class="l"><span class="radio"></span>${l}</div></div>`;
-      });
-      html+=`</div>`;
-    }
-    if(item.sugar){
-      html+=`<div class="sheet-sub" style="margin:10px 0 0">甜度：${item.sugar==='糖'?'固定微糖':'無另外加糖'}</div>`;
-    }
-  }
-
-  // combo upgrade
-  if(g.combo){
-    html+=`<div class="optgroup"><h4>要不要升級套餐？</h4>
-      <div class="toggle-combo">
-        <div class="tc ${!isCombo?'sel':''}" data-combo="0"><div class="t">單點</div><div class="d">$${item.p}</div></div>
-        <div class="tc ${isCombo?'sel':''}" data-combo="1"><div class="t">升級套餐</div><div class="d">+$${CONFIG.COMBO_FEE}（附飲料＋輕鬆配）</div></div>
-      </div></div>`;
-    if(isCombo){
-      // drink picker
-      html+=`<div class="optgroup"><h4>套餐飲料 <span class="req">必選</span></h4>`;
-      drinkItems.forEach(d=>{
-        const free=CONFIG.COMBO_FREE_TEAS.includes(d.id);
-        const adj= free?0:Math.max(0,d.p-CONFIG.COMBO_OTHER_DRINK_DISC);
-        const sel=d.id===comboDrink;
-        html+=`<div class="opt ${sel?'sel':''}" data-cd="${d.id}"><div class="l"><span class="radio"></span><span>${d.zh}<span class="en">${d.en}</span></span></div>
-          <span class="adj">${adj===0?'免費':'+$'+adj}</span></div>`;
-      });
-      html+=`</div>`;
-      // combo drink temperature
-      const selDrink=drinkItems.find(x=>x.id===comboDrink);
-      if(selDrink && selDrink.hot && selDrink.cold){
-        html+=`<div class="optgroup"><h4>飲料冷熱 <span class="req">必選</span></h4>
-          <div class="opt ${comboHot?'sel':''}" data-ctemp="hot"><div class="l"><span class="radio"></span>熱飲 Hot</div></div>
-          <div class="opt ${!comboHot?'sel':''}" data-ctemp="cold"><div class="l"><span class="radio"></span>冰飲 Iced</div></div>
-        </div>`;
-      }
-      // side picker
-      html+=`<div class="optgroup"><h4>套餐輕鬆配 <span class="req">必選</span></h4>`;
-      sideItems.forEach(s=>{
-        const adj=Math.max(0,s.p-CONFIG.COMBO_SIDE_DISC);
-        const sel=s.id===comboSide;
-        html+=`<div class="opt ${sel?'sel':''}" data-cs="${s.id}"><div class="l"><span class="radio"></span><span>${s.zh}<span class="en">${s.en}</span></span></div>
-          <span class="adj">${adj===0?'免費':'+$'+adj}</span></div>`;
-      });
-      html+=`</div>`;
-    }
-  }
-
-  // stepper
-  html+=`<div class="stepper"><button data-step="-1">−</button><span class="n">${qty}</span><button data-step="1">+</button></div>`;
-  $("#itemBody").innerHTML=html;
-
-  const label = isCombo? "加入套餐" : "加入購物車";
-  $("#itemFoot").innerHTML=`<button class="btn" id="addBtn"><span>${label} × ${qty}</span><span class="amt">${money(unitPrice()*qty)}</span></button>`;
-
-  // events
-  $("#itemBody").querySelectorAll("[data-temp]").forEach(o=>o.onclick=()=>{draft.hot=(o.dataset.temp==="hot");renderItemSheet();});
-  $("#itemBody").querySelectorAll("[data-combo]").forEach(o=>o.onclick=()=>{draft.isCombo=o.dataset.combo==="1";renderItemSheet();});
-  $("#itemBody").querySelectorAll("[data-cd]").forEach(o=>o.onclick=()=>{
-    draft.comboDrink=o.dataset.cd;
-    const d=drinkItems.find(x=>x.id===draft.comboDrink);
-    draft.comboHot = d.hot? true : (d.cold?false:null);
-    renderItemSheet();
-  });
-  $("#itemBody").querySelectorAll("[data-ctemp]").forEach(o=>o.onclick=()=>{draft.comboHot=(o.dataset.ctemp==="hot");renderItemSheet();});
-  $("#itemBody").querySelectorAll("[data-cs]").forEach(o=>o.onclick=()=>{draft.comboSide=o.dataset.cs;renderItemSheet();});
-  $("#itemBody").querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{
-    draft.qty=Math.max(1,draft.qty+parseInt(b.dataset.step));renderItemSheet();});
-  $("#addBtn").onclick=commitDraft;
-}
-function commitDraft(){
-  const {item,g,qty,isCombo,hot,comboDrink,comboHot,comboSide}=draft;
-  let name=item.zh, subs=[];
-  if(g.drink && (item.hot&&item.cold)) subs.push(hot?"熱":"冰");
-  if(g.drink && item.sugar) subs.push(item.sugar==='糖'?'微糖':'無糖');
-  if(g.combo && isCombo){
-    name="【套餐】"+item.zh;
-    const d=drinkItems.find(x=>x.id===comboDrink);
-    const s=sideItems.find(x=>x.id===comboSide);
-    const drinkLabel=d.zh+(d.hot&&d.cold?(comboHot?"(熱)":"(冰)"):"");
-    subs.push("飲料："+drinkLabel, "輕鬆配："+s.zh);
-  }
-  addToCart({ name, sub:subs.join("・"), price:unitPrice(), qty });
-  closeSheet();
-  toast(`已加入 ${qty} 份`);
-}
-
-/* ---------------- CART ---------------- */
-function addToCart(line){
-  // merge identical
-  const ex=state.cart.find(c=>c.name===line.name && c.sub===line.sub && c.price===line.price);
-  if(ex) ex.qty+=line.qty; else state.cart.push(line);
+  line.qty+=delta;
+  if(line.qty<=0) state.cart=state.cart.filter(c=>c.key!==key);
+  refreshControl(it.id);
   updateCartBar();
+  if($("#cartSheet").classList.contains("show")) renderCart();
 }
-function cartCount(){return state.cart.reduce((n,c)=>n+c.qty,0);}
-function cartTotal(){return state.cart.reduce((n,c)=>n+c.price*c.qty,0);}
+
+/* ---------------- Cart bar ---------------- */
 function updateCartBar(){
   const n=cartCount();
+  const ci=comboInfo();
   $("#cartCount").textContent=n;
-  $("#cartTotal").textContent=money(cartTotal());
+  $("#cartTotal").textContent=money(itemsTotal());
+  $("#cartCombo").textContent = ci.count>0 ? `已省 $${ci.discount}（${ci.count} 組套餐）` : "";
   $("#cartbar").classList.toggle("show", n>0);
 }
 $("#cartbar").onclick=openCart;
 
-let orderNote="";
+/* ---------------- Cart sheet ---------------- */
 function openCart(){ renderCart(); openSheet("#cartSheet"); }
 function renderCart(){
   if(state.cart.length===0){
@@ -578,7 +482,20 @@ function renderCart(){
     $("#cartFoot").innerHTML="";
     return;
   }
-  const below = MIN_ORDER>0 && cartTotal()<MIN_ORDER;
+  const ci=comboInfo();
+  const below = MIN_ORDER>0 && itemsTotal()<MIN_ORDER;
+
+  // 湊套餐小提示
+  let nudge="";
+  if(ci.count>0 && ci.drinks!==ci.sides){
+    const need=Math.abs(ci.drinks-ci.sides);
+    const what=ci.drinks>ci.sides?"輕鬆配":"飲料";
+    nudge=`<div class="combohint" style="margin-top:12px">🎉 再點 ${need} 份${what}，就能再湊 ${need} 組套餐、多折 $${need*CONFIG.COMBO_DISCOUNT}。</div>`;
+  }else if(ci.count===0 && (ci.drinks>0||ci.sides>0)){
+    const what=ci.drinks>0?"輕鬆配":"飲料";
+    nudge=`<div class="combohint" style="margin-top:12px">💡 加一份${what}即可湊成套餐，折 $${CONFIG.COMBO_DISCOUNT}。</div>`;
+  }
+
   $("#cartBody").innerHTML=`
     <div class="sheet-title">購物車 <span style="font-size:13px;font-weight:400;color:#888">· 🛵 外送 Delivery</span></div>
     ${state.cart.map((c,i)=>`
@@ -586,6 +503,7 @@ function renderCart(){
         <div class="ci">
           <div class="cn">${c.name}</div>
           ${c.sub?`<div class="cs">${c.sub}</div>`:""}
+          ${c.type==="drink"?'<span class="tag">飲料</span>':c.type==="side"?'<span class="tag">輕鬆配</span>':''}
           <div class="qtychip" data-i="${i}">
             <button data-d="-1">−</button><span class="n">${c.qty}</span><button data-d="1">+</button>
           </div>
@@ -593,8 +511,10 @@ function renderCart(){
         <div class="cp">${money(c.price*c.qty)}</div>
       </div>`).join("")}
 
+    ${nudge}
+
     <div style="margin-top:18px">
-      <div class="cn" style="font-family:'Noto Sans TC';font-weight:700;font-size:14px;margin-bottom:10px">外送資訊</div>
+      <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:10px">外送資訊</div>
       <div class="dfield"><label>姓名 <span class="req-star">*</span></label>
         <input id="dName" value="${delivery.name}" placeholder="您的稱呼"></div>
       <div class="dfield"><label>電話 <span class="req-star">*</span></label>
@@ -613,25 +533,30 @@ function renderCart(){
     </div>
 
     <div style="margin-top:6px">
-      <div class="cn" style="font-family:'Noto Sans TC';font-weight:700;font-size:14px;margin-bottom:2px">備註</div>
+      <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:2px">備註</div>
       <textarea class="note" id="orderNote" rows="2" placeholder="例如：不要香菜、餐具數量、大樓門禁…">${orderNote}</textarea>
     </div>
 
     <div style="margin-top:14px">
-      <div class="sumrow"><span>小計</span><span class="n">${money(cartTotal())}</span></div>
+      <div class="sumrow"><span>餐點小計</span><span class="n">${money(subtotal())}</span></div>
+      ${ci.count>0?`<div class="sumrow disc"><span>套餐折扣 × ${ci.count}（飲料＋輕鬆配）</span><span class="n">−${money(ci.discount)}</span></div>`:""}
       <div class="sumrow"><span>外送費</span><span class="n">${DELIVERY_FEE>0?money(DELIVERY_FEE):"免運"}</span></div>
       ${below?`<div class="sumrow" style="color:#d33">未達最低外送金額 ${money(MIN_ORDER)}</div>`:""}
       <div class="sumrow grand"><span>應付金額</span><span class="n">${money(grandTotal())}</span></div>
     </div>`;
+
   $("#cartFoot").innerHTML=`
     <button class="btn ghost" id="clearBtn" style="margin-bottom:8px">清空購物車</button>
     <button class="btn" id="checkoutBtn" ${below?"disabled":""}><span>送出外送訂單</span><span class="amt">${money(grandTotal())}</span></button>`;
 
+  // 購物車內加減
   $("#cartBody").querySelectorAll(".qtychip").forEach(chip=>{
     const i=+chip.dataset.i;
     chip.querySelectorAll("button").forEach(b=>b.onclick=()=>{
-      state.cart[i].qty+=(+b.dataset.d);
-      if(state.cart[i].qty<=0) state.cart.splice(i,1);
+      const line=state.cart[i]; if(!line) return;
+      line.qty+=(+b.dataset.d);
+      if(line.qty<=0) state.cart=state.cart.filter(c=>c!==line);
+      refreshControl(line.id);
       updateCartBar(); renderCart();
     });
   });
@@ -641,80 +566,81 @@ function renderCart(){
   $("#dDate").oninput =e=>delivery.date=e.target.value;
   $("#dTime").onchange=e=>delivery.time=e.target.value;
   $("#orderNote").oninput=e=>orderNote=e.target.value;
-  $("#clearBtn").onclick=()=>{state.cart=[];orderNote="";updateCartBar();renderCart();};
+  $("#clearBtn").onclick=()=>{
+    const ids=[...new Set(state.cart.map(c=>c.id))];
+    state.cart=[]; orderNote="";
+    ids.forEach(refreshControl);
+    updateCartBar(); renderCart();
+  };
   $("#checkoutBtn").onclick=checkout;
 }
 
-function markBad(id){
-  const el=$(id); if(!el) return;
+function markBad(sel){
+  const el=$(sel); if(!el) return;
   el.classList.add("bad");
-  const key={ "#dName":"name","#dPhone":"phone","#dAddr":"address","#dDate":"date","#dTime":"time" }[id];
-  const evt = el.tagName==="SELECT" ? "onchange" : "oninput";
+  const key={ "#dName":"name","#dPhone":"phone","#dAddr":"address","#dDate":"date","#dTime":"time" }[sel];
+  const evt=el.tagName==="SELECT"?"onchange":"oninput";
   el[evt]=e=>{ el.classList.remove("bad"); delivery[key]=e.target.value; };
   el.focus();
 }
 
+/* ---------------- 送出訂單 ---------------- */
 async function checkout(){
-  const btn = $("#checkoutBtn");
+  const btn=$("#checkoutBtn");
+  ["dName","dPhone","dAddr","dDate","dTime"].forEach(id=>{
+    const el=$("#"+id); if(el){ const k={dName:"name",dPhone:"phone",dAddr:"address",dDate:"date",dTime:"time"}[id]; delivery[k]=el.value.trim(); }
+  });
 
-  // 讀取當下輸入值
-  ["dName","dPhone","dAddr","dDate","dTime"].forEach(id=>{ const el=$("#"+id); if(el){ const k={dName:"name",dPhone:"phone",dAddr:"address",dDate:"date",dTime:"time"}[id]; delivery[k]=el.value.trim(); } });
-
-  // 驗證外送資訊
   if(!delivery.name){ toast("請填寫姓名"); markBad("#dName"); return; }
   if(!/[0-9]{6,}/.test(delivery.phone.replace(/[^0-9]/g,""))){ toast("請填寫正確的電話"); markBad("#dPhone"); return; }
   if(!delivery.address){ toast("請填寫外送地址"); markBad("#dAddr"); return; }
   if(!delivery.date){ toast("請選擇預訂日期"); markBad("#dDate"); return; }
   if(!delivery.time){ toast("請選擇預訂時間"); markBad("#dTime"); return; }
-  if(MIN_ORDER>0 && cartTotal()<MIN_ORDER){ toast(`未達最低外送金額 ${money(MIN_ORDER)}`); return; }
+  if(MIN_ORDER>0 && itemsTotal()<MIN_ORDER){ toast(`未達最低外送金額 ${money(MIN_ORDER)}`); return; }
 
-  const total=grandTotal(), items=cartCount();
-  const typeLabel = "外送 Delivery";
-
-  const payload = {
-    orderType: "delivery",
-    typeLabel,
-    items: state.cart.map(c=>({ name:c.name, sub:c.sub||"", price:c.price, qty:c.qty })),
-    count: items,
-    total,
-    customer: {                       // ← 寫進 Orders 表的獨立欄位
+  const ci=comboInfo();
+  const payload={
+    orderType:"delivery",
+    typeLabel:"外送 Delivery",
+    items: state.cart.map(c=>({ name:c.name, sub:c.sub||"", type:c.type, price:c.price, qty:c.qty })),
+    count: cartCount(),
+    combo: { count:ci.count, discount:ci.discount },   // 套餐組數 & 折扣（寫入後端）
+    subtotal: subtotal(),
+    deliveryFee: DELIVERY_FEE,
+    total: grandTotal(),
+    customer:{
       name: delivery.name,
       phone: delivery.phone,
       address: delivery.address,
-      time: (delivery.date && delivery.time) ? `${delivery.date} ${delivery.time}` : (delivery.time || delivery.date || "盡快")
+      time: (delivery.date && delivery.time)?`${delivery.date} ${delivery.time}`:(delivery.time||delivery.date||"盡快")
     },
-    note: orderNote || ""             // 備註欄只放顧客自填的備註
+    note: orderNote||""
   };
 
-  let orderNo = null;
+  let orderNo=null;
   try{
     if(btn){ btn.disabled=true; btn.querySelector("span").textContent="送出中…"; }
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" }, // 避免 CORS 預檢
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if(!data || !data.ok) throw new Error((data && data.error) || "伺服器回應錯誤");
-    orderNo = data.orderNo;
+    const res=await fetch(API_URL,{ method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body:JSON.stringify(payload) });
+    const data=await res.json();
+    if(!data||!data.ok) throw new Error((data&&data.error)||"伺服器回應錯誤");
+    orderNo=data.orderNo;
   }catch(err){
     console.error(err);
     if(btn){ btn.disabled=false; btn.querySelector("span").textContent="送出外送訂單"; }
     toast("送出失敗，請再試一次");
-    return; // 保留購物車，讓顧客重送
+    return;
   }
 
-  const subtotal = payload.items.reduce((s,c)=>s+c.price*c.qty,0);
+  const sub=payload.subtotal;
   $("#cartBody").innerHTML=`
-    <div id="receiptCapture" style="background:#fff">
+    <div id="receiptCapture" style="background:#fff;padding:0 24px">
       <div class="done">
         <div class="check">🛵</div>
         <h2>外送訂單已送出！</h2>
         <p>訂單號碼</p>
         <div class="onum">${orderNo}</div>
       </div>
-
-      <div class="cn" style="font-family:'Noto Sans TC';font-weight:700;font-size:14px;margin-bottom:10px">訂單內容</div>
+      <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:10px">訂單內容</div>
       ${payload.items.map(c=>`
         <div class="cline">
           <div class="ci">
@@ -723,15 +649,14 @@ async function checkout(){
           </div>
           <div class="cp">${money(c.price*c.qty)}</div>
         </div>`).join("")}
-
       <div style="margin-top:14px">
-        <div class="sumrow"><span>小計</span><span class="n">${money(subtotal)}</span></div>
+        <div class="sumrow"><span>餐點小計</span><span class="n">${money(sub)}</span></div>
+        ${ci.count>0?`<div class="sumrow disc"><span>套餐折扣 × ${ci.count}</span><span class="n">−${money(ci.discount)}</span></div>`:""}
         <div class="sumrow"><span>外送費</span><span class="n">${DELIVERY_FEE>0?money(DELIVERY_FEE):"免運"}</span></div>
-        <div class="sumrow grand"><span>應付金額</span><span class="n">${money(total)}</span></div>
+        <div class="sumrow grand"><span>應付金額</span><span class="n">${money(payload.total)}</span></div>
       </div>
-
       <div style="margin-top:18px">
-        <div class="cn" style="font-family:'Noto Sans TC';font-weight:700;font-size:14px;margin-bottom:6px">外送資訊</div>
+        <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:6px">外送資訊</div>
         <p style="color:#666;font-size:13px;line-height:1.8;margin:0">
           收件人：${payload.customer.name}<br>
           電話：${payload.customer.phone}<br>
@@ -739,63 +664,64 @@ async function checkout(){
           預訂日期/時間：${payload.customer.time}${payload.note?`<br>備註：${payload.note}`:""}
         </p>
       </div>
-
       <p style="margin-top:16px;text-align:center;color:#999;font-size:13px">我們已收到訂單，將盡快為您準備並配送 💛</p>
     </div>`;
   $("#cartFoot").innerHTML=`<button class="btn" id="downloadOrder"><span>下載訂單資訊</span><span class="amt">PNG</span></button>`;
-  state.cart=[]; orderNote=""; delivery={ name:"", phone:"", address:"", date:"", time:"" }; updateCartBar();
+
+  // reset
+  const ids=[...new Set(state.cart.map(c=>c.id))];
+  state.cart=[]; orderNote=""; delivery={ name:"", phone:"", address:"", date:"", time:"" };
+  ids.forEach(refreshControl); updateCartBar();
   $("#downloadOrder").onclick=()=>downloadReceiptPNG(orderNo);
 }
 
-/* ---------------- DOWNLOAD RECEIPT AS PNG ---------------- */
+/* ---------------- 收據下載 PNG ---------------- */
 function downloadReceiptPNG(orderNo){
-  const el = $("#receiptCapture");
-  const btn = $("#downloadOrder");
-  if(!el || typeof html2canvas === "undefined"){ toast("PNG 產生失敗，請確認網路連線"); return; }
+  const el=$("#receiptCapture"), btn=$("#downloadOrder");
+  if(!el||typeof html2canvas==="undefined"){ toast("PNG 產生失敗，請確認網路連線"); return; }
   if(btn){ btn.disabled=true; btn.querySelector("span").textContent="產生中…"; }
-  html2canvas(el, { backgroundColor:"#ffffff", scale:2 }).then(canvas=>{
+  html2canvas(el,{ backgroundColor:"#ffffff", scale:2 }).then(canvas=>{
     const link=document.createElement("a");
-    link.download = `A-TOAST-訂單-${orderNo}.png`;
-    link.href = canvas.toDataURL("image/png");
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  }).catch(err=>{
-    console.error(err);
-    toast("下載失敗，請再試一次");
-  }).finally(()=>{
-    if(btn){ btn.disabled=false; btn.querySelector("span").textContent="下載訂單資訊"; }
-  });
+    link.download=`A-TOAST-訂單-${orderNo}.png`;
+    link.href=canvas.toDataURL("image/png");
+    document.body.appendChild(link); link.click(); link.remove();
+  }).catch(err=>{ console.error(err); toast("下載失敗，請再試一次"); })
+    .finally(()=>{ if(btn){ btn.disabled=false; btn.querySelector("span").textContent="下載訂單資訊"; } });
 }
 
-/* ---------------- SHEET CONTROL ---------------- */
-let activeSheet=null;
-function openSheet(sel){
-  activeSheet=sel;
-  $("#overlay").classList.add("show");
-  $(sel).classList.add("show");
-  document.body.style.overflow="hidden";
-}
-function closeSheet(){
-  $("#overlay").classList.remove("show");
-  document.querySelectorAll(".sheet").forEach(s=>s.classList.remove("show"));
-  document.body.style.overflow="";
-  activeSheet=null;
-}
+/* ---------------- Sheet 控制 ---------------- */
+function openSheet(sel){ $("#overlay").classList.add("show"); $(sel).classList.add("show"); document.body.style.overflow="hidden"; }
+function closeSheet(){ $("#overlay").classList.remove("show"); document.querySelectorAll(".sheet").forEach(s=>s.classList.remove("show")); document.body.style.overflow=""; }
 $("#overlay").onclick=closeSheet;
+
+/* ---------------- Scrollspy ---------------- */
+function scrollSpy(){
+  let cur=MENU[0]?.key;
+  for(const g of MENU){ const sec=document.getElementById("sec-"+g.key); if(sec && sec.offsetTop-140<=window.scrollY) cur=g.key; }
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.key===cur));
+}
+window.addEventListener("scroll", scrollSpy, {passive:true});
+
+/* ---------------- 規則面板 ---------------- */
+let rulesAutoTimer=null;
+function toggleRules(force){
+  const panel=$("#rulesPanel");
+  const willOpen = typeof force==="boolean"?force:!panel.classList.contains("open");
+  panel.classList.toggle("open", willOpen);
+  if(rulesAutoTimer){ clearTimeout(rulesAutoTimer); rulesAutoTimer=null; }
+}
+$("#rulesEntry").onclick=()=>toggleRules();
+toggleRules(true);
+rulesAutoTimer=setTimeout(()=>toggleRules(false),5000);
 
 /* ---------------- INIT ---------------- */
 function loadMenu(){
-  return fetch(`${API_URL}?api=menu`)
-    .then(res=>res.json())
-    .then(data=>{
-      if(data && data.ok && Array.isArray(data.menu) && data.menu.length){
-        MENU = data.menu;
-        if(data.config) CONFIG = Object.assign({}, CONFIG, data.config);
-        deriveMenu();
-      }
-    })
-    .catch(err=>{ console.warn("菜單載入失敗，改用內建菜單：", err); }); // API 打不到時仍可瀏覽內建菜單
+  return fetch(`${API_URL}?api=menu`).then(r=>r.json()).then(data=>{
+    if(data && data.ok && Array.isArray(data.menu) && data.menu.length){
+      MENU=data.menu;
+      if(data.config) Object.assign(CONFIG, data.config);
+    }
+  }).catch(err=>{ console.warn("菜單載入失敗，改用內建菜單：", err); });
 }
 async function init(){
   await loadMenu();
