@@ -561,9 +561,11 @@ function renderCart(){
       <div class="sumrow grand"><span>應付金額</span><span class="n">${money(grandTotal())}</span></div>
     </div>`;
 
-  $("#cartFoot").innerHTML=`
-    <button class="btn ghost" id="clearBtn" style="margin-bottom:8px">清空購物車</button>
-    <button class="btn" id="checkoutBtn" ${below?"disabled":""}><span>送出外送訂單</span><span class="amt">${money(grandTotal())}</span></button>`;
+    $("#cartFoot").innerHTML=`
+    <div style="display:flex;gap:8px;align-items:stretch">
+      <button class="btn ghost" id="clearBtn" style="flex:0 0 40%">清空購物車</button>
+      <button class="btn" id="checkoutBtn" style="flex:1" ${below?"disabled":""}><span>送出外送訂單</span><span class="amt">${money(grandTotal())}</span></button>`+
+    `</div>`;
 
   // 購物車內加減
   $("#cartBody").querySelectorAll(".qtychip").forEach(chip=>{
