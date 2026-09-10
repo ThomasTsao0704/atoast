@@ -310,14 +310,14 @@
 /* 本頁可放在任何靜態網站（GitHub Pages / Netlify / Cloudflare Pages…），
    透過 fetch() 呼叫 Apps Script 部署出來的 /exec 網址（doGet ?api=menu 讀菜單、doPost 寫訂單）。
    POST 用 text/plain 是為了避開瀏覽器的 CORS 預檢（Apps Script 沒有實作 doOptions）。 */
-const API_URL = "https://script.google.com/macros/s/AKfycbyz3ibWFgsP_1WWx5B_M-KpSS0SC7YvuvMRk62yqJ9aXo7b9l4vYUOwkZqoIvsd9a4/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxvLbEkvBAmtVy_JljRk_y_OSCLk3eVfJO-ve44vWzbqLYLgqGgt8k7F1mwG28CBYA/exec";
 
 /* ---------------- DATA (內建後備菜單，API 抓不到時仍可瀏覽) ---------------- */
 const DEFAULT_MENU = [];
 
 // 套餐計價參數（載入後會被後端 Config 覆蓋，這裡是離線後備值）
 let CONFIG = {
-  COMBO_FEE: 75,
+  COMBO_FEE: 80,
   COMBO_FREE_TEAS: ["t1","t2"],   // 台灣紅茶 / 高山四季春茶
   COMBO_OTHER_DRINK_DISC: 40,     // 其他飲料折 40
   COMBO_SIDE_DISC: 49,            // 輕鬆配任一折 49
