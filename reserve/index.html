@@ -489,8 +489,20 @@ function renderCart(){
   const ci=comboInfo();
   const below = MIN_ORDER>0 && itemsTotal()<MIN_ORDER;
 
-  // 湊套餐小提示
+    // 湊套餐小提示：一組套餐 = 主餐＋飲料＋輕鬆配，缺什麼就提示補什麼
   let nudge="";
+  const target=ci.count+1;
+  const needCombo =Math.max(0,target-ci.combos);
+  const needDrink=Math.max(0,target-ci.drinks);
+  const needSide =Math.max(0,target-ci.sides);
+  const missing=[];
+  if(needCombo)  missing.push(`${needCombo} 份主餐`);
+  if(needDrink) missing.push(`${needDrink} 份飲料`);
+  if(needSide)  missing.push(`${needSide} 份輕鬆配`);
+  // 已點飲料或輕鬆配（有湊套餐意圖）才提示
+  if(missing.length && (ci.drinks>0||ci.sides>0)){
+    nudge=`<div class="combohint" style="margin-top:12px">🎉 再加 ${missing.join("、")}，就能湊成套餐、折 $${CONFIG.COMBO_DISCOUNT}。</div>`;
+  }
   if(ci.count>0 && ci.drinks!==ci.sides){
     const need=Math.abs(ci.drinks-ci.sides);
     const what=ci.drinks>ci.sides?"輕鬆配":"飲料";
