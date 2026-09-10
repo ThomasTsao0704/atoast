@@ -266,7 +266,7 @@
     </div>
     <div class="rules-entry" id="rulesEntry"><span class="ic">i</span><span>預訂規則</span></div>
     <div class="rules-panel" id="rulesPanel">
-      <div class="inner" id="rulesText">（滿兩千才可外送）</div>
+      <div class="inner" id="rulesText">（此處放預訂規則文字，例如：最低外送金額、外送費、預訂時間限制等）</div>
     </div>
   </div>
 
@@ -307,16 +307,17 @@
 
 <script>
 /* ---------------- API ---------------- */
-/* 本頁由 Apps Script 的 doGet 供應，透過 google.script.run 直接呼叫後端，免 API_URL、免 CORS。
-   若直接用瀏覽器開啟這個檔（沒有後端），會自動退回內建菜單、下單產生本地假號碼供預覽。 */
-function hasBackend(){ return !!(window.google && window.google.script && window.google.script.run); }
+/* 本頁可放在任何靜態網站（GitHub Pages / Netlify / Cloudflare Pages…），
+   透過 fetch() 呼叫 Apps Script 部署出來的 /exec 網址（doGet ?api=menu 讀菜單、doPost 寫訂單）。
+   POST 用 text/plain 是為了避開瀏覽器的 CORS 預檢（Apps Script 沒有實作 doOptions）。 */
+const API_URL = "https://script.google.com/macros/s/AKfycbyz3ibWFgsP_1WWx5B_M-KpSS0SC7YvuvMRk62yqJ9aXo7b9l4vYUOwkZqoIvsd9a4/exec";
 
 /* ---------------- DATA (內建後備菜單，API 抓不到時仍可瀏覽) ---------------- */
 const DEFAULT_MENU = [];
 
 // 套餐計價參數（載入後會被後端 Config 覆蓋，這裡是離線後備值）
 let CONFIG = {
-  COMBO_FEE: 80,
+  COMBO_FEE: 75,
   COMBO_FREE_TEAS: ["t1","t2"],   // 台灣紅茶 / 高山四季春茶
   COMBO_OTHER_DRINK_DISC: 40,     // 其他飲料折 40
   COMBO_SIDE_DISC: 49,            // 輕鬆配任一折 49
@@ -686,23 +687,21 @@ async function checkout(){
   };
 
   let orderNo = null;
-  if(hasBackend()){
-    try{
-      if(btn){ btn.disabled=true; btn.querySelector("span").textContent="送出中…"; }
-      const data = await new Promise((resolve,reject)=>{
-        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).submitOrder(payload);
-      });
-      if(!data || !data.ok) throw new Error((data && data.error) || "伺服器回應錯誤");
-      orderNo = data.orderNo;
-    }catch(err){
-      console.error(err);
-      if(btn){ btn.disabled=false; btn.querySelector("span").textContent="送出外送訂單"; }
-      toast("送出失敗，請再試一次");
-      return; // 保留購物車，讓顧客重送
-    }
-  }else{
-    // 沒有後端（直接開啟檔案預覽）：本地產生假號碼
-    orderNo = "A" + String(Math.floor(Math.random()*900)+100);
+  try{
+    if(btn){ btn.disabled=true; btn.querySelector("span").textContent="送出中…"; }
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // 避免 CORS 預檢
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(!data || !data.ok) throw new Error((data && data.error) || "伺服器回應錯誤");
+    orderNo = data.orderNo;
+  }catch(err){
+    console.error(err);
+    if(btn){ btn.disabled=false; btn.querySelector("span").textContent="送出外送訂單"; }
+    toast("送出失敗，請再試一次");
+    return; // 保留購物車，讓顧客重送
   }
 
   const subtotal = payload.items.reduce((s,c)=>s+c.price*c.qty,0);
@@ -787,20 +786,16 @@ $("#overlay").onclick=closeSheet;
 
 /* ---------------- INIT ---------------- */
 function loadMenu(){
-  return new Promise(resolve=>{
-    if(!hasBackend()){ resolve(); return; }   // 沒有後端 → 用內建菜單
-    google.script.run
-      .withSuccessHandler(data=>{
-        if(data && data.ok && Array.isArray(data.menu) && data.menu.length){
-          MENU = data.menu;
-          if(data.config) CONFIG = Object.assign({}, CONFIG, data.config);
-          deriveMenu();
-        }
-        resolve();
-      })
-      .withFailureHandler(err=>{ console.warn("菜單載入失敗，改用內建菜單：", err); resolve(); })
-      .getMenu();
-  });
+  return fetch(`${API_URL}?api=menu`)
+    .then(res=>res.json())
+    .then(data=>{
+      if(data && data.ok && Array.isArray(data.menu) && data.menu.length){
+        MENU = data.menu;
+        if(data.config) CONFIG = Object.assign({}, CONFIG, data.config);
+        deriveMenu();
+      }
+    })
+    .catch(err=>{ console.warn("菜單載入失敗，改用內建菜單：", err); }); // API 打不到時仍可瀏覽內建菜單
 }
 async function init(){
   await loadMenu();
