@@ -352,10 +352,14 @@ function qtyInCart(key){ const l=state.cart.find(c=>c.key===key); return l? l.qt
 
 /* ---------------- 套餐自動計算 ---------------- */
 function comboInfo(){
-  let drinks=0, sides=0;
-  state.cart.forEach(c=>{ if(c.type==="drink") drinks+=c.qty; else if(c.type==="side") sides+=c.qty; });
-  const count = Math.min(drinks, sides);
-  return { count, discount: count*CONFIG.COMBO_DISCOUNT, drinks, sides };
+  let combos=0, drinks=0, sides=0;
+  state.cart.forEach(c=>{
+    if(c.type==="drink") drinks+=c.qty;
+    else if(c.type==="side") sides+=c.qty;
+    else combos+=c.qty;                 // 主餐（吐司／漢堡／蛋餅…）
+  });
+  const count = Math.min(combos, drinks, sides);   // 一組套餐 = 主餐＋飲料＋輕鬆配
+  return { count, discount: count*CONFIG.COMBO_DISCOUNT, combos, drinks, sides };
 }
 function subtotal(){ return state.cart.reduce((n,c)=>n+c.price*c.qty,0); }
 function itemsTotal(){ return subtotal() - comboInfo().discount; }         // 餐點小計 − 套餐折扣
