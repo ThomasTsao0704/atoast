@@ -232,6 +232,7 @@
   .dfield input:focus,.dfield select:focus{outline:none;border-color:var(--ink);}
   .dfield input.bad,.dfield select.bad{border-color:#d33;background:#fdf3f3;}
   .req-star{color:#d33;}
+  .hidden-el{display:none !important;}
 </style>
 </head>
 <body>
@@ -247,8 +248,9 @@
     </div>
     <div class="combohint">
       <span>🎉</span>
-      <span>自動湊套餐：每一組「飲料＋輕鬆配」自動折 <b>$9</b>，不用手動升級。</span>
+      <span>自動湊套餐：每一組「飲料＋輕鬆配」自動折 <b id="comboAmt">$9</b>，不用手動升級。</span>
     </div>
+    <div class="combohint hidden-el" id="closedBar" style="background:#fdf3f3;border-color:#f3cccc;color:#b42318">⏸ 目前暫停外送預訂，歡迎直接與店家聯繫。</div>
     <div class="rules-entry" id="rulesEntry"><span class="ic">i</span><span>預訂規則</span></div>
     <div class="rules-panel" id="rulesPanel">
       <div class="inner" id="rulesText">· 最低外送金額 $2000
@@ -297,12 +299,21 @@
 /* ---- 後端（Apps Script）---- 抓不到時會自動用下方內建菜單 ---- */
 const API_URL = "https://script.google.com/macros/s/AKfycbxLTfJjFEPJ9_B3u-YjNlclqxXm2eu3VSJEe3MhzIAPaBjzO-VAMcTBmXWlebVPSk2f/exec";
 
-/* ---- 可調整參數 ---- */
+/* ---- LINE 專屬連結代碼：從 LINE 點進來時網址會帶 ?t=xxxx，送單時一起送回，
+        店家核可後才能用 LINE 通知顧客 ---- */
+const LINE_TOKEN = new URLSearchParams(location.search).get("t") || "";
+
+/* ---- 可調整參數（載入菜單時會被後台「設定」覆蓋）---- */
 const CONFIG = {
   COMBO_DISCOUNT: 9,   // 每一組「飲料＋輕鬆配」折抵金額
+  ENABLED: true,
+  SLOT_START: "08:30",
+  SLOT_END: "15:30",
+  SLOT_STEP: 30,
+  LEAD_HOURS: 0,
 };
-const DELIVERY_FEE = 150;   // 外送費；0 = 免運
-const MIN_ORDER    = 2000;  // 最低外送金額；0 = 不限制
+let DELIVERY_FEE = 150;   // 外送費；0 = 免運
+let MIN_ORDER    = 2000;  // 最低外送金額；0 = 不限制
 
 /* ---- 內建後備菜單（部署接上 API 後會被後端菜單覆蓋）----
    分類規則：drink:true = 飲料、side:true = 輕鬆配、其餘 = 主餐。
@@ -334,10 +345,16 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),1600);
 }
 function timeSlots(){
+  const toMin=t=>{ const p=String(t).split(":"); return (+p[0])*60+(+p[1]); };
   const out=[];
-  for(let m=8*60+30;m<=15*60+30;m+=30) out.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
+  for(let m=toMin(CONFIG.SLOT_START);m<=toMin(CONFIG.SLOT_END);m+=(+CONFIG.SLOT_STEP||30)) out.push(String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"));
   return out;
 }
+function todayStr(){
+  const d=new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
 
 function subFor(it,g,temp){
   const parts=[];
@@ -532,14 +549,14 @@ function renderCart(){
     <div style="margin-top:18px">
       <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:10px">外送資訊</div>
       <div class="dfield"><label>姓名 <span class="req-star">*</span></label>
-        <input id="dName" value="${delivery.name}" placeholder="您的稱呼"></div>
+        <input id="dName" value="${esc(delivery.name)}" placeholder="您的稱呼"></div>
       <div class="dfield"><label>電話 <span class="req-star">*</span></label>
-        <input id="dPhone" type="tel" inputmode="tel" value="${delivery.phone}" placeholder="09xx-xxx-xxx"></div>
+        <input id="dPhone" type="tel" inputmode="tel" value="${esc(delivery.phone)}" placeholder="09xx-xxx-xxx"></div>
       <div class="dfield"><label>外送地址 <span class="req-star">*</span></label>
-        <input id="dAddr" value="${delivery.address}" placeholder="縣市 區 路/街 巷弄號樓"></div>
+        <input id="dAddr" value="${esc(delivery.address)}" placeholder="縣市 區 路/街 巷弄號樓"></div>
       <div class="dfield"><label>預訂日期/時間 <span class="req-star">*</span></label>
         <div style="display:flex;gap:8px">
-          <input type="date" id="dDate" value="${delivery.date}" style="flex:1.2">
+          <input type="date" id="dDate" value="${esc(delivery.date)}" min="${todayStr()}" style="flex:1.2">
           <select id="dTime" style="flex:1">
             <option value="">請選擇時間</option>
             ${timeSlots().map(t=>`<option value="${t}" ${delivery.time===t?"selected":""}>${t}</option>`).join("")}
@@ -550,7 +567,7 @@ function renderCart(){
 
     <div style="margin-top:6px">
       <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:2px">備註</div>
-      <textarea class="note" id="orderNote" rows="2" placeholder="例如：統一編號">${orderNote}</textarea>
+      <textarea class="note" id="orderNote" rows="2" placeholder="例如：統一編號">${esc(orderNote)}</textarea>
     </div>
 
     <div style="margin-top:14px">
@@ -564,7 +581,7 @@ function renderCart(){
     $("#cartFoot").innerHTML=`
     <div style="display:flex;gap:8px;align-items:stretch">
       <button class="btn ghost" id="clearBtn" style="flex:0 0 40%">清空購物車</button>
-      <button class="btn" id="checkoutBtn" style="flex:1" ${below?"disabled":""}><span>送出外送訂單</span><span class="amt">${money(grandTotal())}</span></button>`+
+      <button class="btn" id="checkoutBtn" style="flex:1" ${(below||!CONFIG.ENABLED)?"disabled":""}><span>送出外送預訂</span><span class="amt">${money(grandTotal())}</span></button>`+
     `</div>`;
 
   // 購物車內加減
@@ -615,12 +632,13 @@ async function checkout(){
   if(!delivery.date){ toast("請選擇預訂日期"); markBad("#dDate"); return; }
   if(!delivery.time){ toast("請選擇預訂時間"); markBad("#dTime"); return; }
   if(MIN_ORDER>0 && itemsTotal()<MIN_ORDER){ toast(`未達最低外送金額 ${money(MIN_ORDER)}`); return; }
+  if(!CONFIG.ENABLED){ toast("目前暫停外送預訂"); return; }
 
   const ci=comboInfo();
   const payload={
     orderType:"delivery",
     typeLabel:"外送 Delivery",
-    items: state.cart.map(c=>({ name:c.name, sub:c.sub||"", type:c.type, price:c.price, qty:c.qty })),
+    items: state.cart.map(c=>({ id:c.id, temp:c.temp||null, name:c.name, sub:c.sub||"", type:c.type, price:c.price, qty:c.qty })),
     count: cartCount(),
     combo: { count:ci.count, discount:ci.discount },   // 套餐組數 & 折扣（寫入後端）
     subtotal: subtotal(),
@@ -632,20 +650,29 @@ async function checkout(){
       address: delivery.address,
       time: (delivery.date && delivery.time)?`${delivery.date} ${delivery.time}`:(delivery.time||delivery.date||"盡快")
     },
-    note: orderNote||""
+    note: orderNote||"",
+    date: delivery.date,
+    time: delivery.time,
+    lineToken: LINE_TOKEN       // LINE 專屬連結代碼（沒有就是空字串）
   };
 
-  let orderNo=null;
+  let orderNo=null, linked=false;
   try{
     if(btn){ btn.disabled=true; btn.querySelector("span").textContent="送出中…"; }
     const res=await fetch(API_URL,{ method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body:JSON.stringify(payload) });
     const data=await res.json();
-    if(!data||!data.ok) throw new Error((data&&data.error)||"伺服器回應錯誤");
+    if(!data||!data.ok){ const e=new Error((data&&data.error)||"伺服器回應錯誤"); e.server=true; throw e; }
     orderNo=data.orderNo;
+    linked=!!data.linked;
+    // 以伺服器重新計算的金額為準
+    if(typeof data.total==="number"){
+      payload.subtotal=data.subtotal; payload.total=data.total; payload.deliveryFee=data.deliveryFee;
+      ci.count=data.comboCount; ci.discount=data.discount;
+    }
   }catch(err){
     console.error(err);
-    if(btn){ btn.disabled=false; btn.querySelector("span").textContent="送出外送訂單"; }
-    toast("送出失敗，請再試一次");
+    if(btn){ btn.disabled=false; btn.querySelector("span").textContent="送出外送預訂"; }
+    toast(err.server ? err.message : "送出失敗，請檢查網路後再試一次");
     return;
   }
 
@@ -654,35 +681,36 @@ async function checkout(){
     <div id="receiptCapture" style="background:#fff;padding:0 24px">
       <div class="done">
         <div class="check">🛵</div>
-        <h2>外送訂單已送出！</h2>
-        <p>訂單號碼</p>
-        <div class="onum">${orderNo}</div>
+        <h2>預訂已送出，等待店家確認</h2>
+        <p>預訂編號</p>
+        <div class="onum" style="font-size:34px">${esc(orderNo)}</div>
+        <p>${linked?"店家確認後會用 LINE 通知你 💬":"店家確認後將以電話與您聯繫 📞"}</p>
       </div>
       <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:10px">訂單內容</div>
       ${payload.items.map(c=>`
         <div class="cline">
           <div class="ci">
-            <div class="cn">${c.name} × ${c.qty}</div>
-            ${c.sub?`<div class="cs">${c.sub}</div>`:""}
+            <div class="cn">${esc(c.name)} × ${c.qty}</div>
+            ${c.sub?`<div class="cs">${esc(c.sub)}</div>`:""}
           </div>
           <div class="cp">${money(c.price*c.qty)}</div>
         </div>`).join("")}
       <div style="margin-top:14px">
         <div class="sumrow"><span>餐點小計</span><span class="n">${money(sub)}</span></div>
         ${ci.count>0?`<div class="sumrow disc"><span>套餐折扣 × ${ci.count}</span><span class="n">−${money(ci.discount)}</span></div>`:""}
-        <div class="sumrow"><span>外送費</span><span class="n">${DELIVERY_FEE>0?money(DELIVERY_FEE):"免運"}</span></div>
+        <div class="sumrow"><span>外送費</span><span class="n">${payload.deliveryFee>0?money(payload.deliveryFee):"免運"}</span></div>
         <div class="sumrow grand"><span>應付金額</span><span class="n">${money(payload.total)}</span></div>
       </div>
       <div style="margin-top:18px">
         <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:6px">外送資訊</div>
         <p style="color:#666;font-size:13px;line-height:1.8;margin:0">
-          收件人：${payload.customer.name}<br>
-          電話：${payload.customer.phone}<br>
-          地址：${payload.customer.address}<br>
-          預訂日期/時間：${payload.customer.time}${payload.note?`<br>備註：${payload.note}`:""}
+          收件人：${esc(payload.customer.name)}<br>
+          電話：${esc(payload.customer.phone)}<br>
+          地址：${esc(payload.customer.address)}<br>
+          預訂日期/時間：${esc(payload.customer.time)}${payload.note?`<br>備註：${esc(payload.note)}`:""}
         </p>
       </div>
-      <p style="margin-top:16px;text-align:center;color:#999;font-size:13px">我們已收到訂單，將盡快為您準備並配送 💛</p>
+      <p style="margin-top:16px;text-align:center;color:#999;font-size:13px">我們已收到預訂，確認後會依約定時間為您配送 💛</p>
     </div>`;
   $("#cartFoot").innerHTML=`<button class="btn" id="downloadOrder"><span>下載訂單資訊</span><span class="amt">PNG</span></button>`;
 
@@ -735,16 +763,27 @@ rulesAutoTimer=setTimeout(()=>toggleRules(false),5000);
 /* ---------------- INIT ---------------- */
 function loadMenu(){
   return fetch(`${API_URL}?api=menu`).then(r=>r.json()).then(data=>{
-    if(data && data.ok && Array.isArray(data.menu) && data.menu.length){
-      MENU=data.menu;
-      if(data.config) Object.assign(CONFIG, data.config);
+    if(data && data.ok && Array.isArray(data.menu)){
+      if(data.menu.length) MENU=data.menu;
+      if(data.config){
+        Object.assign(CONFIG, data.config);
+        if(typeof data.config.DELIVERY_FEE==="number") DELIVERY_FEE=data.config.DELIVERY_FEE;
+        if(typeof data.config.MIN_ORDER==="number") MIN_ORDER=data.config.MIN_ORDER;
+      }
     }
   }).catch(err=>{ console.warn("菜單載入失敗，改用內建菜單：", err); });
 }
+function applyConfigToPage(){
+  $("#comboAmt").textContent = money(CONFIG.COMBO_DISCOUNT);
+  if(CONFIG.RULES) $("#rulesText").textContent = CONFIG.RULES;
+  $("#closedBar").classList.toggle("hidden-el", CONFIG.ENABLED!==false);
+}
 async function init(){
   await loadMenu();
+  applyConfigToPage();
   renderTabs();
   renderMenu();
+  if(!MENU.length) $("#menu").innerHTML='<div class="empty">菜單載入失敗，請重新整理頁面</div>';
   updateCartBar();
 }
 init();
