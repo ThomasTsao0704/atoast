@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <style>
   :root{
     --ink:#111;
@@ -297,11 +298,27 @@
    ============================================================ */
 
 /* ---- 後端（Apps Script）---- 抓不到時會自動用下方內建菜單 ---- */
-const API_URL = "https://script.google.com/macros/s/AKfycbw73keItxkfq2iizdOsZiOGs7K1053pgwxHR5S39sZv92bnOqV8HDklD-ZjUbv2fXF-/exec";
+/* ★★ 請改成「LINE 機器人」那個 Apps Script 專案的部署網址（結尾 /exec）★★
+   菜單仍來自原本的預訂試算表（Menu / Config），訂單寫入同一份試算表的 Orders，
+   並出現在機器人管理後台的「預訂」分頁。 */
+const API_URL = "https://script.google.com/macros/s/AKfycbwFHGbcY3L4etEliL7Ghh_qeKHSdGwzpOLNGtXmZsNdh7IxwCda26xcAvyee7vQZtM0PA/exec";
 
 /* ---- LINE 專屬連結代碼：從 LINE 點進來時網址會帶 ?t=xxxx，送單時一起送回，
         店家核可後才能用 LINE 通知顧客 ---- */
-const LINE_TOKEN = new URLSearchParams(location.search).get("t") || "";
+const LINE_TOKEN = (function(){
+  const q = new URLSearchParams(location.search);
+  if (q.get("t")) return q.get("t");
+  // 從 liff.line.me 進來時，原本的參數會包在 liff.state 裡
+  const st = q.get("liff.state");
+  if (st) { try { return new URLSearchParams(decodeURIComponent(st).replace(/^[^?]*\?/, "")).get("t") || ""; } catch(e){} }
+  return "";
+})();
+
+/* ---- LIFF：在 LINE 內開啟時自動認出顧客，送出後把收據傳回聊天室 ----
+   LIFF ID 可直接填在這裡，或留空改由後台「設定 → 外送預訂 → LIFF ID」提供 */
+const LIFF_ID = "";
+let LIFF_READY = false;     // liff.init 成功
+let LIFF_IN_CHAT = false;   // 在 LINE 聊天室內開啟（才能用 sendMessages）
 
 /* ---- 可調整參數（載入菜單時會被後台「設定」覆蓋）---- */
 const CONFIG = {
@@ -333,7 +350,7 @@ function groupType(g){
 /* cart line：{ key, id, type, name, sub, price, qty } key = id(+|hot/cold) */
 let state = { cart:[] };
 let orderNote = "";
-let delivery = { name:"", phone:"", address:"", date:"", time:"" };
+let delivery = { name:"", phone:"", address:"", taxId:"", date:"", time:"" };
 
 /* ---------------- HELPERS ---------------- */
 const $ = s => document.querySelector(s);
@@ -554,6 +571,8 @@ function renderCart(){
         <input id="dPhone" type="tel" inputmode="tel" value="${esc(delivery.phone)}" placeholder="09xx-xxx-xxx"></div>
       <div class="dfield"><label>外送地址 <span class="req-star">*</span></label>
         <input id="dAddr" value="${esc(delivery.address)}" placeholder="縣市 區 路/街 巷弄號樓"></div>
+      <div class="dfield"><label>統一編號 <span style="font-weight:400;color:#999">（選填）</span></label>
+        <input id="dTax" inputmode="numeric" maxlength="8" value="${esc(delivery.taxId)}" placeholder="需要開立公司發票時填寫 8 位數字"></div>
       <div class="dfield"><label>預訂日期/時間 <span class="req-star">*</span></label>
         <div style="display:flex;gap:8px">
           <input type="date" id="dDate" value="${esc(delivery.date)}" min="${todayStr()}" style="flex:1.2">
@@ -567,7 +586,7 @@ function renderCart(){
 
     <div style="margin-top:6px">
       <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:2px">備註</div>
-      <textarea class="note" id="orderNote" rows="2" placeholder="例如：統一編號">${esc(orderNote)}</textarea>
+      <textarea class="note" id="orderNote" rows="2" placeholder="例如：餐點分裝、送到管理室">${esc(orderNote)}</textarea>
     </div>
 
     <div style="margin-top:14px">
@@ -598,6 +617,7 @@ function renderCart(){
   $("#dName").oninput =e=>delivery.name=e.target.value;
   $("#dPhone").oninput=e=>delivery.phone=e.target.value;
   $("#dAddr").oninput =e=>delivery.address=e.target.value;
+  $("#dTax").oninput  =e=>delivery.taxId=e.target.value;
   $("#dDate").oninput =e=>delivery.date=e.target.value;
   $("#dTime").onchange=e=>delivery.time=e.target.value;
   $("#orderNote").oninput=e=>orderNote=e.target.value;
@@ -613,7 +633,7 @@ function renderCart(){
 function markBad(sel){
   const el=$(sel); if(!el) return;
   el.classList.add("bad");
-  const key={ "#dName":"name","#dPhone":"phone","#dAddr":"address","#dDate":"date","#dTime":"time" }[sel];
+  const key={ "#dName":"name","#dPhone":"phone","#dAddr":"address","#dTax":"taxId","#dDate":"date","#dTime":"time" }[sel];
   const evt=el.tagName==="SELECT"?"onchange":"oninput";
   el[evt]=e=>{ el.classList.remove("bad"); delivery[key]=e.target.value; };
   el.focus();
@@ -622,13 +642,15 @@ function markBad(sel){
 /* ---------------- 送出訂單 ---------------- */
 async function checkout(){
   const btn=$("#checkoutBtn");
-  ["dName","dPhone","dAddr","dDate","dTime"].forEach(id=>{
-    const el=$("#"+id); if(el){ const k={dName:"name",dPhone:"phone",dAddr:"address",dDate:"date",dTime:"time"}[id]; delivery[k]=el.value.trim(); }
+  ["dName","dPhone","dAddr","dTax","dDate","dTime"].forEach(id=>{
+    const el=$("#"+id); if(el){ const k={dName:"name",dPhone:"phone",dAddr:"address",dTax:"taxId",dDate:"date",dTime:"time"}[id]; delivery[k]=el.value.trim(); }
   });
 
   if(!delivery.name){ toast("請填寫姓名"); markBad("#dName"); return; }
   if(!/[0-9]{6,}/.test(delivery.phone.replace(/[^0-9]/g,""))){ toast("請填寫正確的電話"); markBad("#dPhone"); return; }
   if(!delivery.address){ toast("請填寫外送地址"); markBad("#dAddr"); return; }
+  delivery.taxId=delivery.taxId.replace(/\s/g,"");
+  if(delivery.taxId && !/^\d{8}$/.test(delivery.taxId)){ toast("統一編號需為 8 位數字"); markBad("#dTax"); return; }
   if(!delivery.date){ toast("請選擇預訂日期"); markBad("#dDate"); return; }
   if(!delivery.time){ toast("請選擇預訂時間"); markBad("#dTime"); return; }
   if(MIN_ORDER>0 && itemsTotal()<MIN_ORDER){ toast(`未達最低外送金額 ${money(MIN_ORDER)}`); return; }
@@ -648,15 +670,18 @@ async function checkout(){
       name: delivery.name,
       phone: delivery.phone,
       address: delivery.address,
+      taxId: delivery.taxId,
       time: (delivery.date && delivery.time)?`${delivery.date} ${delivery.time}`:(delivery.time||delivery.date||"盡快")
     },
     note: orderNote||"",
     date: delivery.date,
     time: delivery.time,
-    lineToken: LINE_TOKEN       // LINE 專屬連結代碼（沒有就是空字串）
+    lineToken: LINE_TOKEN,      // LINE 專屬連結代碼（沒有就是空字串）
+    liffAccessToken: liffAccessToken(),   // 後台會拿去向 LINE 驗證身分
+    viaLiffChat: LIFF_IN_CHAT
   };
 
-  let orderNo=null, linked=false;
+  let orderNo=null, linked=false, sentToChat=false;
   try{
     if(btn){ btn.disabled=true; btn.querySelector("span").textContent="送出中…"; }
     const res=await fetch(API_URL,{ method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body:JSON.stringify(payload) });
@@ -676,6 +701,18 @@ async function checkout(){
     return;
   }
 
+  // 在 LINE 聊天室內開啟 → 以顧客名義把收據傳進聊天室（不計官方帳號訊息額度）
+  if(LIFF_IN_CHAT){
+    try{
+      await liff.sendMessages([ receiptFlex(orderNo, payload, ci) ]);
+      sentToChat=true;
+    }catch(err){
+      console.warn("sendMessages 失敗，改傳文字：", err);
+      try{ await liff.sendMessages([{ type:"text", text: receiptText(orderNo, payload, ci) }]); sentToChat=true; }
+      catch(e2){ console.warn("sendMessages 文字也失敗：", e2); }
+    }
+  }
+
   const sub=payload.subtotal;
   $("#cartBody").innerHTML=`
     <div id="receiptCapture" style="background:#fff;padding:0 24px">
@@ -684,6 +721,7 @@ async function checkout(){
         <h2>預訂已送出，等待店家確認</h2>
         <p>預訂編號</p>
         <div class="onum" style="font-size:34px">${esc(orderNo)}</div>
+        <p>${sentToChat?"✅ 訂單已傳到 LINE 聊天室":""}</p>
         <p>${linked?"店家確認後會用 LINE 通知你 💬":"店家確認後將以電話與您聯繫 📞"}</p>
       </div>
       <div class="cn" style="font-weight:700;font-size:14px;margin-bottom:10px">訂單內容</div>
@@ -707,18 +745,100 @@ async function checkout(){
           收件人：${esc(payload.customer.name)}<br>
           電話：${esc(payload.customer.phone)}<br>
           地址：${esc(payload.customer.address)}<br>
+          ${payload.customer.taxId?`統一編號：${esc(payload.customer.taxId)}<br>`:""}
           預訂日期/時間：${esc(payload.customer.time)}${payload.note?`<br>備註：${esc(payload.note)}`:""}
         </p>
       </div>
       <p style="margin-top:16px;text-align:center;color:#999;font-size:13px">我們已收到預訂，確認後會依約定時間為您配送 💛</p>
     </div>`;
-  $("#cartFoot").innerHTML=`<button class="btn" id="downloadOrder"><span>下載訂單資訊</span><span class="amt">PNG</span></button>`;
+  $("#cartFoot").innerHTML = LIFF_READY && liff.isInClient()
+    ? `<div style="display:flex;gap:8px"><button class="btn ghost" id="downloadOrder" style="flex:1"><span>下載</span><span class="amt">PNG</span></button>`+
+      `<button class="btn" id="backToLine" style="flex:1.4;justify-content:center">回到 LINE 聊天室</button></div>`
+    : `<button class="btn" id="downloadOrder"><span>下載訂單資訊</span><span class="amt">PNG</span></button>`;
+  if($("#backToLine")) $("#backToLine").onclick=()=>liff.closeWindow();
 
   // reset
   const ids=[...new Set(state.cart.map(c=>c.id))];
-  state.cart=[]; orderNote=""; delivery={ name:"", phone:"", address:"", date:"", time:"" };
+  state.cart=[]; orderNote=""; delivery={ name:"", phone:"", address:"", taxId:"", date:"", time:"" };
   ids.forEach(refreshControl); updateCartBar();
   $("#downloadOrder").onclick=()=>downloadReceiptPNG(orderNo);
+}
+
+/* ---------------- LIFF ---------------- */
+async function initLiff(){
+  const id = LIFF_ID || CONFIG.LIFF_ID;
+  if(!id || typeof liff==="undefined") return;
+  try{
+    await liff.init({ liffId:id });
+    LIFF_READY = true;
+    if(liff.isInClient()){
+      const ctx = liff.getContext();
+      LIFF_IN_CHAT = !!ctx && ["utou","group","room"].includes(ctx.type);
+    }
+    // 已登入 LINE：自動帶入顧客暱稱（顧客可再修改）
+    if(liff.isLoggedIn() && !delivery.name){
+      try{ const pf = await liff.getProfile(); delivery.name = pf.displayName || ""; }catch(e){}
+    }
+  }catch(err){
+    console.warn("LIFF 初始化失敗（仍可一般下單）：", err);
+  }
+}
+function liffAccessToken(){
+  try{ return (LIFF_READY && liff.isLoggedIn()) ? (liff.getAccessToken() || "") : ""; }catch(e){ return ""; }
+}
+
+/* 傳進聊天室的收據（Flex Message） */
+function receiptFlex(orderNo, p, ci){
+  const row=(l,r,o={})=>({ type:"box", layout:"horizontal", contents:[
+    { type:"text", text:String(l), size:"sm", color:o.color||"#555555", flex:5, wrap:true, weight:o.bold?"bold":"regular" },
+    { type:"text", text:String(r), size:"sm", color:o.color||"#111111", flex:2, align:"end", weight:o.bold?"bold":"regular" }
+  ]});
+  const info=(l,r)=>({ type:"box", layout:"baseline", spacing:"sm", contents:[
+    { type:"text", text:l, size:"xs", color:"#888888", flex:2 },
+    { type:"text", text:String(r||"-"), size:"xs", color:"#333333", flex:6, wrap:true }
+  ]});
+  const MAX=25;
+  const items=p.items.slice(0,MAX).map(c=>row(c.name+(c.sub?`（${c.sub}）`:"")+" × "+c.qty, money(c.price*c.qty)));
+  if(p.items.length>MAX) items.push({ type:"text", text:`…另有 ${p.items.length-MAX} 項`, size:"xs", color:"#888888" });
+  const sums=[ row("餐點小計", money(p.subtotal)) ];
+  if(ci.count>0) sums.push(row(`套餐折扣 × ${ci.count}`, "−"+money(ci.discount), { color:"#0a7d33" }));
+  sums.push(row("外送費", p.deliveryFee>0?money(p.deliveryFee):"免運"));
+  const infos=[ info("送達", p.customer.time), info("收件人", p.customer.name+"　"+p.customer.phone), info("地址", p.customer.address) ];
+  if(p.customer.taxId) infos.push(info("統編", p.customer.taxId));
+  if(p.note) infos.push(info("備註", p.note));
+  return {
+    type:"flex",
+    altText:`【外送預訂】${orderNo}　應付 ${money(p.total)}`,
+    contents:{
+      type:"bubble",
+      header:{ type:"box", layout:"vertical", backgroundColor:"#111111", paddingAll:"16px", contents:[
+        { type:"text", text:"🛵 外送預訂", color:"#ffffff", weight:"bold", size:"lg" },
+        { type:"text", text:orderNo, color:"#bbbbbb", size:"sm", margin:"sm" }
+      ]},
+      body:{ type:"box", layout:"vertical", spacing:"sm", contents:
+        items.concat([{ type:"separator", margin:"md" }], sums, [
+          { type:"separator", margin:"md" },
+          row("應付金額", money(p.total), { bold:true }),
+          { type:"separator", margin:"md" }
+        ], infos)
+      },
+      footer:{ type:"box", layout:"vertical", contents:[
+        { type:"text", text:"⏳ 等待店家確認，確認後會再通知你", size:"xs", color:"#888888", align:"center", wrap:true }
+      ]}
+    }
+  };
+}
+/* Flex 傳送失敗時的純文字備案（開頭固定為【外送預訂】，機器人不會回話） */
+function receiptText(orderNo, p, ci){
+  return [`【外送預訂】${orderNo}`, ""]
+    .concat(p.items.map(c=>`・${c.name}${c.sub?`（${c.sub}）`:""} × ${c.qty}　${money(c.price*c.qty)}`))
+    .concat(["", `餐點小計 ${money(p.subtotal)}`])
+    .concat(ci.count>0?[`套餐折扣 × ${ci.count}　−${money(ci.discount)}`]:[])
+    .concat([`外送費 ${p.deliveryFee>0?money(p.deliveryFee):"免運"}`, `應付金額 ${money(p.total)}`, "",
+      `送達：${p.customer.time}`, `收件人：${p.customer.name} ${p.customer.phone}`, `地址：${p.customer.address}`])
+    .concat(p.customer.taxId?[`統編：${p.customer.taxId}`]:[])
+    .concat(p.note?[`備註：${p.note}`]:[])
+    .concat(["", "⏳ 等待店家確認"]).join("\n").slice(0, 4900);
 }
 
 /* ---------------- 收據下載 PNG ---------------- */
@@ -779,7 +899,12 @@ function applyConfigToPage(){
   $("#closedBar").classList.toggle("hidden-el", CONFIG.ENABLED!==false);
 }
 async function init(){
+  if(!/^https:\/\/script\.google\.com\//.test(API_URL)){
+    $("#menu").innerHTML='<div class="empty">⚠️ 尚未設定 API_URL<br>請在 index.html 填入 LINE 機器人的 /exec 網址</div>';
+    return;
+  }
   await loadMenu();
+  await initLiff();
   applyConfigToPage();
   renderTabs();
   renderMenu();
